@@ -38,7 +38,7 @@ development_status:
   epic-1: contexted
   1-1-project-structure: done
   1-2-external-libraries: done
-  1-3-test-environment: backlog
+  1-3-test-environment: done
   1-4-love2d-setup: backlog
   epic-1-retrospective: optional
 
