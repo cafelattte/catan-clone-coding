@@ -1,0 +1,229 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>3</storyId>
+    <title>정착지/도시 배치</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-3-settlement-city-placement.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>정점에 정착지와 도시를 배치할 수 있어</iWant>
+    <soThat>플레이어 건물 위치 추적 가능</soThat>
+    <tasks>
+      <task id="1" title="건물 저장 구조 구현" acs="1,2,3">
+        <subtask id="1.1">Board 테이블에 settlements, cities Map 구조 추가 (Board.new() 수정)</subtask>
+        <subtask id="1.2">키 형식: 정규화된 정점 문자열 (예: "0,0,N")</subtask>
+        <subtask id="1.3">값 형식: {player = playerId}</subtask>
+      </task>
+      <task id="2" title="정착지 배치 API 구현" acs="1,2,3,6">
+        <subtask id="2.1">board:placeSettlement(playerId, q, r, dir) 메서드 구현</subtask>
+        <subtask id="2.2">vertex.normalize(q, r, dir) 호출하여 정규화</subtask>
+        <subtask id="2.3">vertex.toString(q, r, dir) 또는 직접 키 생성</subtask>
+        <subtask id="2.4">중복 체크 (settlements와 cities 모두 확인)</subtask>
+        <subtask id="2.5">배치 성공 시 self.settlements[key] = {player = playerId} 저장</subtask>
+        <subtask id="2.6">실패 시 false, "이미 건물이 있습니다" 반환</subtask>
+      </task>
+      <task id="3" title="건물 조회 API 구현" acs="2">
+        <subtask id="3.1">board:getBuilding(q, r, dir) 메서드 구현</subtask>
+        <subtask id="3.2">정규화 후 settlements 및 cities에서 조회</subtask>
+        <subtask id="3.3">정착지면 {type="settlement", player=playerId} 반환</subtask>
+        <subtask id="3.4">도시면 {type="city", player=playerId} 반환</subtask>
+        <subtask id="3.5">없으면 nil 반환</subtask>
+      </task>
+      <task id="4" title="도시 업그레이드 API 구현" acs="4">
+        <subtask id="4.1">board:upgradeToCity(q, r, dir) 메서드 구현</subtask>
+        <subtask id="4.2">정규화 후 해당 위치에 정착지가 있는지 확인</subtask>
+        <subtask id="4.3">정착지 있으면 settlements에서 제거, cities에 추가</subtask>
+        <subtask id="4.4">정착지 없으면 false, "정착지가 없습니다" 반환</subtask>
+        <subtask id="4.5">이미 도시면 false, "이미 도시입니다" 반환</subtask>
+      </task>
+      <task id="5" title="플레이어별 건물 조회 API" acs="5">
+        <subtask id="5.1">board:getPlayerBuildings(playerId) 메서드 구현</subtask>
+        <subtask id="5.2">settlements와 cities 순회하며 해당 플레이어 건물 수집</subtask>
+        <subtask id="5.3">반환 형식: {{q, r, dir, type}, ...} 목록</subtask>
+      </task>
+      <task id="6" title="추가 유틸리티 메서드" acs="tech-spec">
+        <subtask id="6.1">board:hasBuilding(q, r, dir) - 건물 존재 여부 boolean</subtask>
+        <subtask id="6.2">board:placeCity(playerId, q, r, dir) - 직접 도시 배치 (선택적)</subtask>
+        <subtask id="6.3">board:getSettlementsOnTile(q, r) - 타일 인접 정착지 조회</subtask>
+        <subtask id="6.4">board:getCitiesOnTile(q, r) - 타일 인접 도시 조회</subtask>
+      </task>
+      <task id="7" title="테스트 작성" acs="7">
+        <subtask id="7.1">정착지 배치 성공 테스트</subtask>
+        <subtask id="7.2">정착지 조회 테스트 (getBuilding)</subtask>
+        <subtask id="7.3">중복 배치 실패 테스트 (같은 위치)</subtask>
+        <subtask id="7.4">정규화 일관성 테스트 ((0,-1,"S") == (0,0,"N"))</subtask>
+        <subtask id="7.5">도시 업그레이드 테스트</subtask>
+        <subtask id="7.6">업그레이드 실패 테스트 (정착지 없음, 이미 도시)</subtask>
+        <subtask id="7.7">getPlayerBuildings 테스트</subtask>
+        <subtask id="7.8">hasBuilding 테스트</subtask>
+        <subtask id="7.9">타일 인접 건물 조회 테스트</subtask>
+        <subtask id="7.10">모든 테스트 통과 확인</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC4-3-1">board:placeSettlement(playerId, q, r, dir) 호출 시 해당 정점에 정착지 배치, true 반환</ac>
+    <ac id="AC4-3-2">board:getBuilding(q, r, dir) 호출 시 {type="settlement", player=playerId} 반환</ac>
+    <ac id="AC4-3-3">이미 건물 있는 위치에 배치 시 false, 에러 메시지 반환</ac>
+    <ac id="AC4-3-4">board:upgradeToCity(q, r, dir) 호출 시 정착지→도시 변환</ac>
+    <ac id="AC4-3-5">board:getPlayerBuildings(playerId) 호출 시 해당 플레이어의 모든 건물 목록 반환</ac>
+    <ac id="AC4-3-6">정규화: (0, -1, "S")와 (0, 0, "N")이 같은 정점이면 중복 감지</ac>
+    <ac id="AC4-3-7">테스트 통과: tests/game/board_spec.lua</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="Story 4-3: 정착지/도시 배치">
+        Board 구조에 settlements/cities Map 저장, placeSettlement/getBuilding/upgradeToCity API 정의, 정점 정규화 활용한 중복 방지
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Data Architecture">
+        GameState 구조 정의: buildings.settlements/cities Map 구조, 키는 정규화된 정점 문자열 "0,1,N"
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="ADR-003">
+        Map 기반 건물 저장 - 정규화된 좌표 문자열을 키로 사용, O(1) 조회, 중복 자동 방지
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="ADR-001">
+        src/game/은 Love2D 의존성 없이 순수 Lua로 구현, busted로 독립 테스트 가능
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Module Dependencies">
+        board.lua ← hex.lua, vertex.lua, edge.lua, constants.lua 의존성 정의
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Implementation Patterns">
+        Naming conventions: 파일명 snake_case, 모듈/클래스 PascalCase, 함수 camelCase, 상수 UPPER_SNAKE
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 4.3: 정착지/도시 배치">
+        스토리 정의: 정점에 정착지와 도시 배치, 플레이어 건물 위치 추적, Map 구조 사용
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="Workflows and Sequencing">
+        건물 배치 시퀀스: placeSettlement 호출 → 정점 정규화 → 키 생성 → 중복 체크 → 배치
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="Non-Functional Requirements">
+        건물/도로 조회 O(1), 플레이어 건물 조회 O(n), 중복 배치 방지, 원자적 실패
+      </doc>
+    </docs>
+    <code>
+      <file path="src/game/board.lua" kind="module" symbol="Board" lines="1-165" reason="메인 수정 대상 - settlements/cities Map 추가, placeSettlement/getBuilding/upgradeToCity 메서드 구현">
+        현재 Board.new()는 tiles, robber만 초기화. settlements, cities Map 추가 필요
+      </file>
+      <file path="src/game/vertex.lua" kind="module" symbol="Vertex" lines="1-101" reason="정점 정규화(normalize), 문자열 변환(toString) 활용">
+        Vertex.normalize(q, r, dir) - S 방향을 N으로 정규화
+        Vertex.toString(q, r, dir) - Map 키 생성 "q,r,dir"
+        Vertex.getAdjacentHexes(q, r, dir) - 타일 인접 건물 조회에 활용
+      </file>
+      <file path="tests/game/board_spec.lua" kind="test" symbol="board tests" lines="1-296" reason="Story 4-1, 4-2 테스트 존재. Story 4-3 테스트 추가 필요">
+        기존 패턴: describe/it 구조, BDD 스타일, assert 사용
+      </file>
+      <file path="src/game/constants.lua" kind="module" symbol="Constants" reason="TERRAIN_TYPES, TILE_DISTRIBUTION 참조">
+        지형 상수, 자원 상수 정의 - 이 스토리에서 직접 사용 안함
+      </file>
+      <file path="tests/game/vertex_spec.lua" kind="test" reason="vertex 정규화 테스트 참조 가능">
+        정규화 일관성 테스트 패턴 참조
+      </file>
+    </code>
+    <dependencies>
+      <lua>
+        <runtime>Lua 5.1 (LuaJIT via Love2D)</runtime>
+        <engine>Love2D 11.5+</engine>
+        <test>busted (LuaRocks)</test>
+      </lua>
+      <libs>
+        <lib name="classic.lua" path="lib/classic.lua" purpose="클래스 시스템 (이 스토리에서 직접 사용 안함)"/>
+        <lib name="serpent.lua" path="lib/serpent.lua" purpose="직렬화 (이 스토리에서 직접 사용 안함)"/>
+        <lib name="hump.gamestate" path="lib/hump/gamestate.lua" purpose="씬 관리 (이 스토리에서 직접 사용 안함)"/>
+      </libs>
+      <internal>
+        <module name="vertex.lua" path="src/game/vertex.lua" purpose="정점 정규화 - normalize, toString 함수 활용"/>
+        <module name="constants.lua" path="src/game/constants.lua" purpose="상수 정의 (간접 의존)"/>
+      </internal>
+      <config path=".busted">
+        busted 테스트 설정: verbose=true, ROOT=tests/, lpath="src/?.lua;lib/?.lua"
+      </config>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/game/ 모듈은 Love2D 의존성 없이 순수 Lua로 구현</constraint>
+    <constraint source="ADR-003">건물 저장은 Map 기반 - 정규화된 좌표 문자열을 키로 사용</constraint>
+    <constraint source="Dev Notes">Board.new() 수정 시 기존 테스트 통과 유지</constraint>
+    <constraint source="Tech-Spec">건물 조회 O(1) 성능 보장</constraint>
+    <constraint source="Tech-Spec">중복 배치 방지 - 원자적 실패 (상태 변경 없음)</constraint>
+    <constraint source="Tech-Spec">playerId는 1-4 범위의 숫자</constraint>
+    <constraint source="Naming">함수명 camelCase (placeSettlement, getBuilding)</constraint>
+    <constraint source="Error Handling">실패 시 false, error_message 반환 패턴 사용</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="Vertex.normalize" kind="function" path="src/game/vertex.lua">
+      <signature>Vertex.normalize(q, r, dir) → q, r, dir</signature>
+      <description>정점 정규화 - S 방향을 N으로 변환. 동일 물리적 정점 통일</description>
+    </interface>
+    <interface name="Vertex.toString" kind="function" path="src/game/vertex.lua">
+      <signature>Vertex.toString(q, r, dir) → string</signature>
+      <description>"q,r,dir" 형식 문자열 반환 - Map 키로 사용</description>
+    </interface>
+    <interface name="Vertex.fromString" kind="function" path="src/game/vertex.lua">
+      <signature>Vertex.fromString(str) → q, r, dir</signature>
+      <description>문자열에서 정점 좌표 파싱</description>
+    </interface>
+    <interface name="Vertex.getAdjacentHexes" kind="function" path="src/game/vertex.lua">
+      <signature>Vertex.getAdjacentHexes(q, r, dir) → table</signature>
+      <description>정점 인접 3개 헥스 반환 - getSettlementsOnTile/getCitiesOnTile 구현에 활용</description>
+    </interface>
+    <interface name="board:placeSettlement" kind="method" path="src/game/board.lua" status="TO_IMPLEMENT">
+      <signature>board:placeSettlement(playerId, q, r, dir) → boolean, error</signature>
+      <description>정착지 배치. 성공 시 true, 실패 시 false + 에러 메시지</description>
+    </interface>
+    <interface name="board:getBuilding" kind="method" path="src/game/board.lua" status="TO_IMPLEMENT">
+      <signature>board:getBuilding(q, r, dir) → table|nil</signature>
+      <description>건물 조회. {type, player} 또는 nil 반환</description>
+    </interface>
+    <interface name="board:upgradeToCity" kind="method" path="src/game/board.lua" status="TO_IMPLEMENT">
+      <signature>board:upgradeToCity(q, r, dir) → boolean, error</signature>
+      <description>정착지→도시 업그레이드</description>
+    </interface>
+    <interface name="board:getPlayerBuildings" kind="method" path="src/game/board.lua" status="TO_IMPLEMENT">
+      <signature>board:getPlayerBuildings(playerId) → table</signature>
+      <description>플레이어의 모든 건물 목록 반환</description>
+    </interface>
+    <interface name="board:hasBuilding" kind="method" path="src/game/board.lua" status="TO_IMPLEMENT">
+      <signature>board:hasBuilding(q, r, dir) → boolean</signature>
+      <description>건물 존재 여부 확인</description>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      busted BDD 스타일 테스트. describe/it 구조 사용. assert.equals, assert.is_true, assert.is_nil 등 assertion 활용.
+      테스트는 독립적으로 실행 가능해야 함 (Love2D 없이). before_each로 테스트 setup.
+      기존 board_spec.lua에 Story 4-3 테스트를 추가하는 방식으로 진행.
+    </standards>
+    <locations>
+      <location>tests/game/board_spec.lua</location>
+      <location>tests/game/vertex_spec.lua (참조용)</location>
+      <command>busted tests/game/board_spec.lua</command>
+      <command>busted tests/ (전체 테스트)</command>
+    </locations>
+    <ideas>
+      <idea ac="AC4-3-1">정착지 배치 성공 테스트 - placeSettlement(1, 0, 0, "N") → true</idea>
+      <idea ac="AC4-3-2">getBuilding 조회 테스트 - {type="settlement", player=1} 반환 확인</idea>
+      <idea ac="AC4-3-3">중복 배치 실패 테스트 - 같은 위치 두 번 배치 시 false + 에러 메시지</idea>
+      <idea ac="AC4-3-6">정규화 일관성 테스트 - (0,-1,"S")에 배치 후 (0,0,"N")으로 조회 성공</idea>
+      <idea ac="AC4-3-6">정규화 중복 감지 - (0,-1,"S")에 배치 후 (0,0,"N")에 배치 시도 → false</idea>
+      <idea ac="AC4-3-4">도시 업그레이드 성공 테스트 - 정착지 있는 곳에 upgradeToCity → true</idea>
+      <idea ac="AC4-3-4">업그레이드 후 조회 테스트 - getBuilding → {type="city", player=1}</idea>
+      <idea ac="AC4-3-4">정착지 없는 곳 업그레이드 실패 - false + "정착지가 없습니다"</idea>
+      <idea ac="AC4-3-4">이미 도시인 곳 업그레이드 실패 - false + "이미 도시입니다"</idea>
+      <idea ac="AC4-3-5">getPlayerBuildings 테스트 - 여러 건물 배치 후 해당 플레이어 건물만 반환</idea>
+      <idea ac="AC4-3-5">다른 플레이어 건물 제외 테스트 - playerId 필터링 확인</idea>
+      <idea ac="util">hasBuilding true/false 테스트</idea>
+      <idea ac="util">getSettlementsOnTile 테스트 - 타일 인접 정착지 조회</idea>
+      <idea ac="util">getCitiesOnTile 테스트 - 타일 인접 도시 조회</idea>
+      <idea ac="regression">Board.new() 후 settlements, cities 빈 테이블 확인</idea>
+      <idea ac="regression">기존 타일 테스트 통과 유지 확인</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -293,4 +293,367 @@ describe("Board", function()
     end)
   end)
 
+  -- Story 4-3: 정착지/도시 배치
+
+  describe("settlements and cities initialization", function()
+    it("should have empty settlements map on new board", function()
+      local board = Board.new()
+
+      assert.is_not_nil(board.settlements)
+      assert.equals(0, #board:getPlayerBuildings(1))
+    end)
+
+    it("should have empty cities map on new board", function()
+      local board = Board.new()
+
+      assert.is_not_nil(board.cities)
+      assert.equals(0, #board:getPlayerBuildings(1))
+    end)
+  end)
+
+  describe("placeSettlement", function()
+    it("should place settlement and return true", function()
+      local board = Board.new()
+
+      local success = board:placeSettlement(1, 0, 0, "N")
+
+      assert.is_true(success)
+    end)
+
+    it("should allow retrieval via getBuilding after placement", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      local building = board:getBuilding(0, 0, "N")
+
+      assert.is_not_nil(building)
+      assert.equals("settlement", building.type)
+      assert.equals(1, building.player)
+    end)
+
+    it("should fail when placing on existing settlement", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      local success, err = board:placeSettlement(2, 0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("이미 건물이 있습니다", err)
+    end)
+
+    it("should fail when placing on existing city", function()
+      local board = Board.new()
+
+      board:placeCity(1, 0, 0, "N")
+      local success, err = board:placeSettlement(2, 0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("이미 건물이 있습니다", err)
+    end)
+  end)
+
+  describe("getBuilding", function()
+    it("should return settlement info for settlement", function()
+      local board = Board.new()
+
+      board:placeSettlement(2, 1, 1, "N")
+      local building = board:getBuilding(1, 1, "N")
+
+      assert.equals("settlement", building.type)
+      assert.equals(2, building.player)
+    end)
+
+    it("should return city info for city", function()
+      local board = Board.new()
+
+      board:placeCity(3, 1, 1, "N")
+      local building = board:getBuilding(1, 1, "N")
+
+      assert.equals("city", building.type)
+      assert.equals(3, building.player)
+    end)
+
+    it("should return nil for empty vertex", function()
+      local board = Board.new()
+
+      local building = board:getBuilding(0, 0, "N")
+
+      assert.is_nil(building)
+    end)
+  end)
+
+  describe("vertex normalization consistency", function()
+    it("should detect duplicate via normalization (0,-1,S) == (0,0,N)", function()
+      local board = Board.new()
+
+      -- (0, -1, S) 방향에 배치
+      board:placeSettlement(1, 0, -1, "S")
+
+      -- (0, 0, N)으로 조회 - 같은 물리적 위치
+      local building = board:getBuilding(0, 0, "N")
+
+      assert.is_not_nil(building)
+      assert.equals("settlement", building.type)
+      assert.equals(1, building.player)
+    end)
+
+    it("should prevent duplicate placement via normalization", function()
+      local board = Board.new()
+
+      -- (0, -1, S)에 배치
+      board:placeSettlement(1, 0, -1, "S")
+
+      -- (0, 0, N)에 배치 시도 - 같은 물리적 위치이므로 실패해야 함
+      local success, err = board:placeSettlement(2, 0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("이미 건물이 있습니다", err)
+    end)
+
+    it("should allow placement on different normalized vertices", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      local success = board:placeSettlement(2, 0, 0, "S")
+
+      -- (0, 0, S)는 (0, 1, N)으로 정규화됨 - 다른 위치
+      assert.is_true(success)
+    end)
+  end)
+
+  describe("upgradeToCity", function()
+    it("should upgrade settlement to city", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      local success = board:upgradeToCity(0, 0, "N")
+
+      assert.is_true(success)
+
+      local building = board:getBuilding(0, 0, "N")
+      assert.equals("city", building.type)
+      assert.equals(1, building.player)
+    end)
+
+    it("should fail when no settlement exists", function()
+      local board = Board.new()
+
+      local success, err = board:upgradeToCity(0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("정착지가 없습니다", err)
+    end)
+
+    it("should fail when already a city", function()
+      local board = Board.new()
+
+      board:placeCity(1, 0, 0, "N")
+      local success, err = board:upgradeToCity(0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("이미 도시입니다", err)
+    end)
+
+    it("should work with normalized coordinates", function()
+      local board = Board.new()
+
+      -- (0, -1, S)에 배치
+      board:placeSettlement(1, 0, -1, "S")
+
+      -- (0, 0, N)으로 업그레이드 - 같은 물리적 위치
+      local success = board:upgradeToCity(0, 0, "N")
+
+      assert.is_true(success)
+
+      local building = board:getBuilding(0, -1, "S")
+      assert.equals("city", building.type)
+    end)
+  end)
+
+  describe("getPlayerBuildings", function()
+    it("should return empty list for player with no buildings", function()
+      local board = Board.new()
+
+      local buildings = board:getPlayerBuildings(1)
+
+      assert.equals(0, #buildings)
+    end)
+
+    it("should return all buildings for a player", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      board:placeSettlement(1, 1, 0, "N")
+      board:placeCity(1, 2, 0, "N")
+
+      local buildings = board:getPlayerBuildings(1)
+
+      assert.equals(3, #buildings)
+    end)
+
+    it("should not include other players buildings", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      board:placeSettlement(2, 1, 0, "N")
+      board:placeCity(2, 2, 0, "N")
+
+      local player1Buildings = board:getPlayerBuildings(1)
+      local player2Buildings = board:getPlayerBuildings(2)
+
+      assert.equals(1, #player1Buildings)
+      assert.equals(2, #player2Buildings)
+    end)
+
+    it("should return buildings with correct structure", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+
+      local buildings = board:getPlayerBuildings(1)
+
+      assert.equals(1, #buildings)
+      assert.equals(0, buildings[1].q)
+      assert.equals(0, buildings[1].r)
+      assert.equals("N", buildings[1].dir)
+      assert.equals("settlement", buildings[1].type)
+    end)
+  end)
+
+  describe("hasBuilding", function()
+    it("should return false for empty vertex", function()
+      local board = Board.new()
+
+      assert.is_false(board:hasBuilding(0, 0, "N"))
+    end)
+
+    it("should return true for settlement", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+
+      assert.is_true(board:hasBuilding(0, 0, "N"))
+    end)
+
+    it("should return true for city", function()
+      local board = Board.new()
+
+      board:placeCity(1, 0, 0, "N")
+
+      assert.is_true(board:hasBuilding(0, 0, "N"))
+    end)
+
+    it("should work with normalized coordinates", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, -1, "S")
+
+      -- (0, 0, N)으로 조회 - 같은 물리적 위치
+      assert.is_true(board:hasBuilding(0, 0, "N"))
+    end)
+  end)
+
+  describe("placeCity", function()
+    it("should place city directly", function()
+      local board = Board.new()
+
+      local success = board:placeCity(1, 0, 0, "N")
+
+      assert.is_true(success)
+
+      local building = board:getBuilding(0, 0, "N")
+      assert.equals("city", building.type)
+      assert.equals(1, building.player)
+    end)
+
+    it("should fail on existing building", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      local success, err = board:placeCity(2, 0, 0, "N")
+
+      assert.is_false(success)
+      assert.equals("이미 건물이 있습니다", err)
+    end)
+  end)
+
+  describe("getSettlementsOnTile", function()
+    it("should return empty list when no settlements adjacent", function()
+      local board = Board.new()
+
+      local settlements = board:getSettlementsOnTile(0, 0)
+
+      assert.equals(0, #settlements)
+    end)
+
+    it("should return settlements adjacent to tile", function()
+      local board = Board.new()
+
+      -- 타일 (0, 0)의 N 정점에 배치
+      board:placeSettlement(1, 0, 0, "N")
+
+      local settlements = board:getSettlementsOnTile(0, 0)
+
+      assert.equals(1, #settlements)
+      assert.equals(1, settlements[1].player)
+    end)
+
+    it("should return multiple settlements on same tile", function()
+      local board = Board.new()
+
+      -- 타일 (0, 0)의 여러 정점에 배치
+      board:placeSettlement(1, 0, 0, "N")
+      board:placeSettlement(2, 0, 0, "S")
+
+      local settlements = board:getSettlementsOnTile(0, 0)
+
+      assert.equals(2, #settlements)
+    end)
+
+    it("should not include cities", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      board:placeCity(2, 0, 0, "S")
+
+      local settlements = board:getSettlementsOnTile(0, 0)
+
+      assert.equals(1, #settlements)
+      assert.equals(1, settlements[1].player)
+    end)
+  end)
+
+  describe("getCitiesOnTile", function()
+    it("should return empty list when no cities adjacent", function()
+      local board = Board.new()
+
+      local cities = board:getCitiesOnTile(0, 0)
+
+      assert.equals(0, #cities)
+    end)
+
+    it("should return cities adjacent to tile", function()
+      local board = Board.new()
+
+      board:placeCity(1, 0, 0, "N")
+
+      local cities = board:getCitiesOnTile(0, 0)
+
+      assert.equals(1, #cities)
+      assert.equals(1, cities[1].player)
+    end)
+
+    it("should not include settlements", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
+      board:placeCity(2, 0, 0, "S")
+
+      local cities = board:getCitiesOnTile(0, 0)
+
+      assert.equals(1, #cities)
+      assert.equals(2, cities[1].player)
+    end)
+  end)
+
 end)
