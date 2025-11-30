@@ -65,4 +65,11 @@ Constants.TERRAIN_RESOURCE = {
   desert = nil
 }
 
+-- 숫자 토큰 분포 (GDD 명세)
+-- 2, 12: 1개씩 / 3-6, 8-11: 2개씩 / 7: 0개 (도둑 이동)
+-- 총 18개 (19개 타일 - 1개 사막)
+Constants.NUMBER_TOKENS = {
+  2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12
+}
+
 return Constants

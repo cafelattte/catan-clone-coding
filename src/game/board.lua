@@ -58,6 +58,18 @@ local function createTilePool()
 end
 
 ---
+-- 숫자 토큰 풀 생성 (18개)
+-- @return table 숫자 목록
+---
+local function createNumberPool()
+  local pool = {}
+  for _, num in ipairs(Constants.NUMBER_TOKENS) do
+    pool[#pool + 1] = num
+  end
+  return pool
+end
+
+---
 -- 빈 보드 생성
 -- @return Board 새 보드 인스턴스
 ---
@@ -79,16 +91,28 @@ function Board.newStandard()
   local terrainPool = createTilePool()
   shuffle(terrainPool)
 
+  -- 숫자 토큰 풀 생성 및 셔플
+  local numberPool = createNumberPool()
+  shuffle(numberPool)
+  local numberIndex = 1
+
   -- 좌표에 타일 배치
   for i, coord in ipairs(BOARD_COORDS) do
     local terrain = terrainPool[i]
     local key = tileKey(coord.q, coord.r)
+    local number = nil
+
+    -- 사막이 아닌 타일에만 숫자 토큰 배치
+    if terrain ~= "desert" then
+      number = numberPool[numberIndex]
+      numberIndex = numberIndex + 1
+    end
 
     self.tiles[key] = {
       q = coord.q,
       r = coord.r,
       terrain = terrain,
-      number = nil  -- 숫자 토큰은 Story 4-2에서 구현
+      number = number
     }
 
     -- 사막 타일에 도둑 배치
@@ -119,6 +143,21 @@ function Board:getAllTiles()
   local result = {}
   for _, tile in pairs(self.tiles) do
     result[#result + 1] = tile
+  end
+  return result
+end
+
+---
+-- 특정 숫자 토큰이 있는 타일들 반환
+-- @param n number 찾을 숫자 (2-6, 8-12)
+-- @return table 해당 숫자를 가진 타일 목록
+---
+function Board:getTilesWithNumber(n)
+  local result = {}
+  for _, tile in pairs(self.tiles) do
+    if tile.number == n then
+      result[#result + 1] = tile
+    end
   end
   return result
 end

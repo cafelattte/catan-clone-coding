@@ -176,4 +176,121 @@ describe("Board", function()
     end)
   end)
 
+  -- Story 4-2: 숫자 토큰 배치
+
+  describe("number tokens", function()
+    it("should have 18 tiles with numbers", function()
+      local board = Board.newStandard()
+      local tiles = board:getAllTiles()
+
+      local tilesWithNumber = 0
+      for _, tile in ipairs(tiles) do
+        if tile.number ~= nil then
+          tilesWithNumber = tilesWithNumber + 1
+        end
+      end
+
+      assert.equals(18, tilesWithNumber)
+    end)
+
+    it("should have correct number distribution", function()
+      local board = Board.newStandard()
+      local tiles = board:getAllTiles()
+
+      -- 숫자별 카운트
+      local counts = {}
+      for _, tile in ipairs(tiles) do
+        if tile.number ~= nil then
+          counts[tile.number] = (counts[tile.number] or 0) + 1
+        end
+      end
+
+      -- GDD 명세: 2, 12: 1개씩 / 3-6, 8-11: 2개씩
+      assert.equals(1, counts[2])
+      assert.equals(2, counts[3])
+      assert.equals(2, counts[4])
+      assert.equals(2, counts[5])
+      assert.equals(2, counts[6])
+      assert.is_nil(counts[7])  -- 7은 없음
+      assert.equals(2, counts[8])
+      assert.equals(2, counts[9])
+      assert.equals(2, counts[10])
+      assert.equals(2, counts[11])
+      assert.equals(1, counts[12])
+    end)
+
+    it("should have numbers in valid range (2-6, 8-12)", function()
+      local board = Board.newStandard()
+      local tiles = board:getAllTiles()
+
+      for _, tile in ipairs(tiles) do
+        if tile.number ~= nil then
+          local valid = (tile.number >= 2 and tile.number <= 6) or
+                        (tile.number >= 8 and tile.number <= 12)
+          assert.is_true(valid, "Number " .. tile.number .. " is out of valid range")
+        end
+      end
+    end)
+
+    it("should not have number 7", function()
+      local board = Board.newStandard()
+      local tiles = board:getAllTiles()
+
+      for _, tile in ipairs(tiles) do
+        assert.is_not_equal(7, tile.number)
+      end
+    end)
+  end)
+
+  describe("getTilesWithNumber", function()
+    it("should return tiles with specific number", function()
+      local board = Board.newStandard()
+
+      -- 숫자 8은 2개 있어야 함
+      local tiles8 = board:getTilesWithNumber(8)
+      assert.equals(2, #tiles8)
+
+      for _, tile in ipairs(tiles8) do
+        assert.equals(8, tile.number)
+      end
+    end)
+
+    it("should return 1 tile for numbers 2 and 12", function()
+      local board = Board.newStandard()
+
+      local tiles2 = board:getTilesWithNumber(2)
+      local tiles12 = board:getTilesWithNumber(12)
+
+      assert.equals(1, #tiles2)
+      assert.equals(1, #tiles12)
+    end)
+
+    it("should return 2 tiles for numbers 3-6 and 8-11", function()
+      local board = Board.newStandard()
+
+      local numbersWithTwo = {3, 4, 5, 6, 8, 9, 10, 11}
+      for _, num in ipairs(numbersWithTwo) do
+        local tiles = board:getTilesWithNumber(num)
+        assert.equals(2, #tiles, "Expected 2 tiles for number " .. num)
+      end
+    end)
+
+    it("should return empty list for number 7", function()
+      local board = Board.newStandard()
+
+      local tiles7 = board:getTilesWithNumber(7)
+      assert.equals(0, #tiles7)
+    end)
+
+    it("should return empty list for invalid numbers", function()
+      local board = Board.newStandard()
+
+      local tiles1 = board:getTilesWithNumber(1)
+      local tiles13 = board:getTilesWithNumber(13)
+
+      assert.equals(0, #tiles1)
+      assert.equals(0, #tiles13)
+    end)
+  end)
+
 end)

@@ -1,0 +1,140 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>2</storyId>
+    <title>숫자 토큰 배치</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-2-number-tokens.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>각 타일에 숫자 토큰(2-12, 7 제외)이 배치되어</iWant>
+    <soThat>주사위 결과에 따른 자원 생산 가능</soThat>
+    <tasks>
+      <task id="1" acs="4">숫자 토큰 분포 상수 추가
+        <subtask id="1.1">src/game/constants.lua에 NUMBER_TOKENS 상수 추가</subtask>
+        <subtask id="1.2">분포 정의: {2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12}</subtask>
+      </task>
+      <task id="2" acs="1,2,4,5">숫자 토큰 배치 로직
+        <subtask id="2.1">createNumberPool() 함수 - 18개 숫자 토큰 목록 생성</subtask>
+        <subtask id="2.2">Board.newStandard()에서 숫자 토큰 배치 추가</subtask>
+        <subtask id="2.3">사막 타일 건너뛰기 (number = nil 유지)</subtask>
+        <subtask id="2.4">나머지 타일에 숫자 할당</subtask>
+      </task>
+      <task id="3" acs="3">숫자 조회 API 추가
+        <subtask id="3.1">board:getTilesWithNumber(n) 메서드 구현</subtask>
+        <subtask id="3.2">숫자 n과 일치하는 타일 목록 반환</subtask>
+      </task>
+      <task id="4" acs="6">테스트 작성
+        <subtask id="4.1">사막 타일 number nil 테스트 (기존 확인)</subtask>
+        <subtask id="4.2">18개 타일 숫자 배치 테스트</subtask>
+        <subtask id="4.3">숫자 분포 검증 테스트 (2, 12: 1개 / 3-11: 2개)</subtask>
+        <subtask id="4.4">getTilesWithNumber() 테스트</subtask>
+        <subtask id="4.5">숫자 범위 검증 (2-6, 8-12)</subtask>
+        <subtask id="4.6">모든 테스트 통과 확인</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC4-2-1">사막 타일은 숫자 없음 (number = nil)</criterion>
+    <criterion id="AC4-2-2">나머지 18개 타일에 숫자 토큰 배치됨</criterion>
+    <criterion id="AC4-2-3">board:getTilesWithNumber(n) 호출 시 해당 숫자인 타일들 반환</criterion>
+    <criterion id="AC4-2-4">숫자 토큰 분포: 2, 12: 1개씩 / 3-6, 8-11: 2개씩 / 7: 0개</criterion>
+    <criterion id="AC4-2-5">board:getTile(q, r).number는 2-6 또는 8-12 범위 (사막 제외)</criterion>
+    <criterion id="AC4-2-6">테스트 통과: tests/game/board_spec.lua</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/game-architecture.md" title="Game Architecture">
+        <section name="Data Architecture">GameState.board.tiles 구조: {q, r, terrain, number}</section>
+        <section name="ADR-001">src/game/은 Love2D 의존 없이 순수 Lua로 구현</section>
+        <section name="Naming Conventions">상수: UPPER_SNAKE, 함수: camelCase</section>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown">
+        <section name="Story 4.2">숫자 토큰 배치 - 18개 타일, 분포: 2,12(1개), 3-6,8-11(2개)</section>
+        <section name="FR6">보드 타일 배치(19개) 및 숫자 토큰</section>
+      </doc>
+      <doc path="docs/sprint-artifacts/4-1-board-tiles.md" title="Story 4-1 (done)">
+        <section name="Board.newStandard">19개 타일 생성, number=nil로 초기화됨</section>
+        <section name="타일 구조">{q, r, terrain, number} - number 추가 필요</section>
+      </doc>
+    </docs>
+    <code>
+      <file path="src/game/board.lua" kind="module" reason="숫자 토큰 배치 로직 추가 대상">
+        <symbol name="Board.newStandard" lines="75-101">표준 보드 생성 - 숫자 토큰 배치 추가 필요 (현재 number=nil)</symbol>
+        <symbol name="Board:getTile" lines="109-112">타일 조회 - number 필드 접근 가능</symbol>
+        <symbol name="Board:getAllTiles" lines="118-124">전체 타일 목록 - 숫자 분포 검증용</symbol>
+        <symbol name="shuffle" lines="38-44">Fisher-Yates 셔플 - 숫자 토큰 셔플에 재사용</symbol>
+        <symbol name="createTilePool" lines="50-58">타일 풀 생성 패턴 - createNumberPool 참고</symbol>
+      </file>
+      <file path="src/game/constants.lua" kind="module" reason="NUMBER_TOKENS 상수 추가 대상">
+        <symbol name="Constants.TILE_DISTRIBUTION" lines="49-56">타일 분포 상수 - NUMBER_TOKENS 패턴 참고</symbol>
+        <symbol name="Constants.TERRAIN_TYPES" lines="39-46">지형 타입 배열</symbol>
+      </file>
+      <file path="tests/game/board_spec.lua" kind="test" reason="숫자 토큰 테스트 추가 대상">
+        <symbol name="describe desert tile" lines="160-177">사막 타일 number nil 테스트 (기존)</symbol>
+        <symbol name="describe newStandard" lines="28-65">19개 타일 생성 테스트</symbol>
+      </file>
+      <newFile path="(none)" kind="none" reason="기존 파일 수정만 필요"/>
+    </code>
+    <dependencies>
+      <ecosystem name="Lua">
+        <package name="busted">BDD-style testing framework</package>
+      </ecosystem>
+      <ecosystem name="Love2D">
+        <note>src/game/ 모듈은 Love2D 의존 없음 (ADR-001)</note>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/game/ 모듈은 Love2D 의존 불가, 순수 Lua로 구현</constraint>
+    <constraint source="Architecture">숫자 토큰 범위: 2-6, 8-12 (7 제외)</constraint>
+    <constraint source="GDD">분포: 2, 12는 1개씩, 3-6, 8-11은 2개씩, 총 18개</constraint>
+    <constraint source="Story 4-1">기존 Board.newStandard()에 숫자 배치 로직 추가</constraint>
+    <constraint source="Code Style">상수명 UPPER_SNAKE, 함수명 camelCase</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Board.newStandard" kind="function" path="src/game/board.lua">
+      <signature>function Board.newStandard() returns Board</signature>
+      <usage>local board = Board.newStandard() -- 이제 tiles에 number 필드 포함</usage>
+    </interface>
+    <interface name="Board:getTilesWithNumber" kind="method" path="src/game/board.lua">
+      <signature>function Board:getTilesWithNumber(n) returns table of tiles</signature>
+      <usage>local tiles = board:getTilesWithNumber(8) -- 숫자 8인 타일들</usage>
+    </interface>
+    <interface name="Constants.NUMBER_TOKENS" kind="constant" path="src/game/constants.lua">
+      <signature>Constants.NUMBER_TOKENS = {2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12}</signature>
+      <usage>18개 숫자 토큰 목록 (셔플 후 타일에 배치)</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      busted BDD 스타일 테스트. describe/it 패턴.
+      테스트 파일: tests/game/board_spec.lua
+      실행: busted tests/ 또는 busted tests/game/board_spec.lua
+      기존 테스트에 숫자 토큰 관련 테스트 추가.
+    </standards>
+    <locations>
+      <location pattern="tests/game/board_spec.lua">Board 모듈 테스트</location>
+      <location pattern="tests/game/constants_spec.lua">Constants 모듈 테스트 (선택)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC4-2-1">사막 타일 number == nil 확인 (기존 테스트 유지)</idea>
+      <idea ac="AC4-2-2">비사막 타일 18개 모두 number ~= nil 확인</idea>
+      <idea ac="AC4-2-3">getTilesWithNumber(8) 반환 타일 수 == 2 확인</idea>
+      <idea ac="AC4-2-3">getTilesWithNumber(2) 반환 타일 수 == 1 확인</idea>
+      <idea ac="AC4-2-3">getTilesWithNumber(7) 반환 타일 수 == 0 확인</idea>
+      <idea ac="AC4-2-4">숫자 분포 검증: 2(1), 3(2), 4(2), 5(2), 6(2), 8(2), 9(2), 10(2), 11(2), 12(1)</idea>
+      <idea ac="AC4-2-5">모든 숫자가 2-6 또는 8-12 범위 내 확인</idea>
+      <idea ac="AC4-2-5">숫자 7이 없음 확인</idea>
+    </ideas>
+  </tests>
+</story-context>

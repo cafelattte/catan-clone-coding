@@ -63,7 +63,7 @@ development_status:
   # Epic 4: Board State
   epic-4: contexted
   4-1-board-tiles: done
-  4-2-number-tokens: backlog
+  4-2-number-tokens: done
   4-3-settlement-city-placement: backlog
   4-4-road-placement: backlog
   epic-4-retrospective: optional
@@ -79,8 +79,8 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Visual Experience
-  epic-6: backlog
-  6-1-hex-board-rendering: backlog
+  epic-6: contexted
+  6-1-hex-board-rendering: done
   6-2-building-road-rendering: backlog
   6-3-hud-display: backlog
   6-4-mouse-to-hex: backlog

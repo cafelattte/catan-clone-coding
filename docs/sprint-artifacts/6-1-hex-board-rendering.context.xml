@@ -1,0 +1,185 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>1</storyId>
+    <title>헥스 보드 렌더링</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/6-1-hex-board-rendering.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>헥스 보드가 화면에 표시되어</iWant>
+    <soThat>게임 상태를 시각적으로 확인 가능</soThat>
+    <tasks>
+      <task id="1" acs="2,4">Colors 모듈 생성
+        <subtask id="1.1">src/ui/colors.lua 파일 생성</subtask>
+        <subtask id="1.2">Colors.TERRAIN 테이블 - 6개 지형 색상 정의</subtask>
+        <subtask id="1.3">Colors.NUMBER 테이블 - 일반(검정), 핫(빨강) 색상 정의</subtask>
+        <subtask id="1.4">Colors.UI 테이블 - 배경, 텍스트 색상 정의</subtask>
+      </task>
+      <task id="2" acs="1">BoardView 모듈 기본 구조
+        <subtask id="2.1">src/ui/board_view.lua 파일 생성</subtask>
+        <subtask id="2.2">hex 모듈 require (cubeToPixel 사용)</subtask>
+        <subtask id="2.3">colors 모듈 require</subtask>
+        <subtask id="2.4">BoardView.draw(board, hexSize, offsetX, offsetY) 함수 시그니처 정의</subtask>
+      </task>
+      <task id="3" acs="1,2,5">헥스 타일 렌더링 함수
+        <subtask id="3.1">drawHexagon(px, py, size, color) - 정육각형 폴리곤 그리기</subtask>
+        <subtask id="3.2">Pointy-top 레이아웃 각도 계산 (30도 시작, 60도 간격)</subtask>
+        <subtask id="3.3">love.graphics.polygon("fill", ...) 사용</subtask>
+        <subtask id="3.4">love.graphics.polygon("line", ...) 외곽선 그리기</subtask>
+      </task>
+      <task id="4" acs="1,2">보드 전체 렌더링
+        <subtask id="4.1">BoardView.draw()에서 board:getAllTiles() 순회</subtask>
+        <subtask id="4.2">각 타일의 (q, r) → 픽셀 좌표 변환 (hex.axialToPixel)</subtask>
+        <subtask id="4.3">지형에 맞는 색상으로 drawHexagon 호출</subtask>
+        <subtask id="4.4">19개 타일 모두 렌더링 확인</subtask>
+      </task>
+      <task id="5" acs="3,4">숫자 토큰 렌더링
+        <subtask id="5.1">drawNumberToken(px, py, number) 함수 구현</subtask>
+        <subtask id="5.2">사막 타일 (number == nil) 건너뛰기</subtask>
+        <subtask id="5.3">숫자 토큰 배경 원 그리기 (베이지색)</subtask>
+        <subtask id="5.4">숫자 텍스트 중앙 정렬</subtask>
+        <subtask id="5.5">6, 8은 빨간색 (Colors.NUMBER.hot) 사용</subtask>
+      </task>
+      <task id="6" acs="1,2,3,4,5">통합 및 테스트
+        <subtask id="6.1">main.lua에서 BoardView.draw() 호출</subtask>
+        <subtask id="6.2">love . 실행하여 시각적 확인</subtask>
+        <subtask id="6.3">19개 타일 위치 확인</subtask>
+        <subtask id="6.4">지형 색상 확인</subtask>
+        <subtask id="6.5">숫자 토큰 및 6/8 빨간색 확인</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC6-1-1">BoardView.draw(board, hexSize, offsetX, offsetY) 호출 시 19개 헥스 타일이 올바른 위치에 렌더링됨</criterion>
+    <criterion id="AC6-1-2">각 타일은 지형에 맞는 색상으로 표시됨: forest=녹색(0.2,0.6,0.2), hills=주황(0.8,0.5,0.2), pasture=연두(0.6,0.8,0.4), fields=노랑(0.9,0.8,0.3), mountains=회색(0.5,0.5,0.5), desert=베이지(0.9,0.85,0.7)</criterion>
+    <criterion id="AC6-1-3">각 타일 중앙에 숫자 토큰이 표시됨 (사막 제외)</criterion>
+    <criterion id="AC6-1-4">6, 8은 빨간색으로 강조 표시됨 (높은 확률 숫자)</criterion>
+    <criterion id="AC6-1-5">Pointy-top 헥스 레이아웃으로 렌더링됨</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-6.md" title="Epic 6 Technical Specification">
+        <section name="AC-6.1: 헥스 보드 렌더링">19개 헥스 타일 렌더링, 지형별 색상, 숫자 토큰, 6/8 빨간색 강조</section>
+        <section name="Data Models - colors.lua">TERRAIN, NUMBER, PLAYER, UI 색상 정의 - RGB 0-1 범위</section>
+        <section name="APIs - board_view.lua">BoardView.draw(), drawHex(), drawSettlement(), drawCity(), drawRoad() 인터페이스</section>
+        <section name="Workflows - 렌더링 순서">배경 → 헥스 타일 → 숫자 토큰 → 도로 → 건물 → 하이라이트 → HUD</section>
+        <section name="Dependencies">hex.lua (cubeToPixel), board.lua (getAllTiles, getTile), constants.lua (TERRAIN_TYPES)</section>
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture">
+        <section name="Project Structure">src/ui/ 폴더: board_view.lua, hud.lua, input.lua, colors.lua</section>
+        <section name="ADR-001: 로직/렌더링 분리">src/game/은 Love2D 의존 없음, src/ui/는 Love2D 의존 가능</section>
+        <section name="ADR-002: Axial + Cube 좌표계">저장은 Axial (q,r), 계산은 Cube 변환, Pointy-top 헥스</section>
+        <section name="Module Dependencies">hex.lua는 의존성 없음, vertex/edge → hex, board → hex/vertex/edge/constants</section>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown">
+        <section name="Story 6.1">헥스 보드 렌더링 AC - 19개 타일, 지형 색상, 숫자 토큰, 6/8 강조</section>
+        <section name="FR13">헥스 보드 렌더링 기능 요구사항</section>
+      </doc>
+    </docs>
+    <code>
+      <file path="src/game/hex.lua" kind="module" reason="Coordinate conversion - cubeToPixel for rendering hex tiles at correct pixel positions">
+        <symbol name="Hex.axialToCube" lines="33-38">Axial (q,r) → Cube (x,y,z) 변환</symbol>
+        <symbol name="Hex.cubeToPixel" lines="87-93">Cube → Pixel 변환 (Pointy-top 레이아웃) - 렌더링 위치 계산에 필수</symbol>
+        <symbol name="Hex.DIRECTIONS" lines="7-14">6방향 상수 - 이웃 헥스 계산용</symbol>
+      </file>
+      <file path="src/game/board.lua" kind="module" reason="Board state management - getAllTiles() for iterating tiles to render">
+        <symbol name="Board:getAllTiles" lines="118-124">모든 타일 목록 반환 - 렌더링 루프에서 사용</symbol>
+        <symbol name="Board:getTile" lines="109-112">특정 좌표 타일 조회 - 디버깅/검증용</symbol>
+        <symbol name="Board.newStandard" lines="75-101">표준 19개 타일 보드 생성 - 테스트용</symbol>
+      </file>
+      <file path="src/game/constants.lua" kind="module" reason="Game constants - TERRAIN_TYPES for color mapping">
+        <symbol name="Constants.TERRAIN_TYPES" lines="39-46">6개 지형 타입 배열 - Colors.TERRAIN 키와 매칭</symbol>
+        <symbol name="Constants.TILE_DISTRIBUTION" lines="49-56">타일 분포 - 검증용</symbol>
+      </file>
+      <file path="main.lua" kind="entry" reason="Love2D entry point - needs to call BoardView.draw() in love.draw()">
+        <symbol name="love.draw" lines="9-12">렌더링 콜백 - BoardView.draw() 호출 추가 필요</symbol>
+        <symbol name="love.load" lines="1-3">초기화 콜백 - Board 인스턴스 생성 추가 필요</symbol>
+      </file>
+      <newFile path="src/ui/colors.lua" kind="module" reason="New file to create - color palette definitions"/>
+      <newFile path="src/ui/board_view.lua" kind="module" reason="New file to create - hex board rendering"/>
+    </code>
+    <dependencies>
+      <ecosystem name="Love2D">
+        <package name="love" version="11.5+">2D game framework - graphics, input, window management</package>
+        <config file="conf.lua">window: 1280x720, title: "Settlus of Catan"</config>
+      </ecosystem>
+      <ecosystem name="Lua Libraries">
+        <package name="classic" path="lib/classic.lua">Lightweight OOP class system</package>
+        <package name="serpent" path="lib/serpent.lua">Lua serializer (debugging)</package>
+        <package name="hump.gamestate" path="lib/hump/gamestate.lua">Scene/state management</package>
+      </ecosystem>
+      <ecosystem name="Testing">
+        <package name="busted">BDD-style testing framework for Lua</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/ui/ 모듈은 Love2D 의존 가능하지만, src/game/ 모듈은 Love2D 의존 불가</constraint>
+    <constraint source="ADR-002">Pointy-top 헥스 레이아웃 사용 (Flat-top 아님)</constraint>
+    <constraint source="Architecture">colors.lua는 의존성 없음, board_view.lua는 hex/board/colors 의존</constraint>
+    <constraint source="Dev Notes">숫자 토큰은 현재 nil (Story 4-2에서 구현) - nil 체크 필요</constraint>
+    <constraint source="Love2D">RGB 색상 범위 0-1 (0-255 아님)</constraint>
+    <constraint source="Code Style">파일명 snake_case, 모듈 PascalCase, 함수 camelCase</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="Hex.cubeToPixel" kind="function" path="src/game/hex.lua">
+      <signature>function Hex.cubeToPixel(x, y, z, size) returns px, py</signature>
+      <usage>로컬 좌표 계산: x, y, z = Hex.axialToCube(tile.q, tile.r); px, py = Hex.cubeToPixel(x, y, z, hexSize)</usage>
+    </interface>
+    <interface name="Board:getAllTiles" kind="method" path="src/game/board.lua">
+      <signature>function Board:getAllTiles() returns table of {q, r, terrain, number}</signature>
+      <usage>for _, tile in ipairs(board:getAllTiles()) do ... end</usage>
+    </interface>
+    <interface name="love.graphics.polygon" kind="api" path="Love2D">
+      <signature>love.graphics.polygon(mode, ...vertices)</signature>
+      <usage>love.graphics.polygon("fill", unpack(corners)); love.graphics.polygon("line", unpack(corners))</usage>
+    </interface>
+    <interface name="love.graphics.setColor" kind="api" path="Love2D">
+      <signature>love.graphics.setColor(r, g, b, a)</signature>
+      <usage>love.graphics.setColor(Colors.TERRAIN[terrain]) -- RGB 0-1 범위</usage>
+    </interface>
+    <interface name="love.graphics.circle" kind="api" path="Love2D">
+      <signature>love.graphics.circle(mode, x, y, radius)</signature>
+      <usage>숫자 토큰 배경 원: love.graphics.circle("fill", px, py, tokenRadius)</usage>
+    </interface>
+    <interface name="love.graphics.print" kind="api" path="Love2D">
+      <signature>love.graphics.print(text, x, y)</signature>
+      <usage>숫자 토큰 텍스트: love.graphics.print(tostring(number), px, py)</usage>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      UI 모듈은 Love2D 의존성으로 인해 busted 단위 테스트 대상이 아님.
+      colors.lua는 순수 데이터이므로 테스트 불필요.
+      board_view.lua는 시각적 테스트 (수동) 진행.
+      기존 src/game/ 모듈은 busted BDD 스타일로 테스트 (describe/it 패턴).
+      테스트 실행: busted tests/ 또는 busted tests/game/hex_spec.lua
+    </standards>
+    <locations>
+      <location pattern="tests/game/*_spec.lua">게임 로직 테스트</location>
+      <location pattern="tests/ui/*_spec.lua">UI 테스트 (향후 추가 시)</location>
+      <location>시각적 테스트: love . 실행 후 수동 검증</location>
+    </locations>
+    <ideas>
+      <idea ac="AC6-1-1">19개 타일 카운트 검증 - board:getAllTiles() 반환 개수 확인</idea>
+      <idea ac="AC6-1-1">각 타일 좌표가 유효한 보드 범위 내 확인</idea>
+      <idea ac="AC6-1-2">Colors.TERRAIN[terrain] 반환값이 {r, g, b} 형식인지 확인</idea>
+      <idea ac="AC6-1-2">6개 지형 타입 모두 Colors.TERRAIN에 정의되어 있는지 확인</idea>
+      <idea ac="AC6-1-3">사막 타일(number == nil)에 숫자 토큰이 렌더링되지 않는지 확인</idea>
+      <idea ac="AC6-1-4">숫자 6, 8에 Colors.NUMBER.hot 적용 확인</idea>
+      <idea ac="AC6-1-5">Pointy-top 정점 각도 검증 (-30도 시작, 60도 간격)</idea>
+      <idea ac="visual">love . 실행 후 19개 타일 시각적 확인</idea>
+      <idea ac="visual">지형별 색상 시각적 확인 (forest=녹색, hills=주황 등)</idea>
+      <idea ac="visual">숫자 토큰 위치 및 6/8 빨간색 확인</idea>
+      <idea ac="debug">디버그 모드에서 좌표 텍스트 오버레이 옵션 (선택)</idea>
+    </ideas>
+  </tests>
+</story-context>
