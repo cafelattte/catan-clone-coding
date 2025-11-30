@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Story Context XML
+  Story: 1-1-project-structure (프로젝트 구조 생성)
+  Generated: 2025-11-30
+  Purpose: Provide dev agent with all context needed to implement this story
+-->
+<story-context>
+  <metadata>
+    <story-id>1-1-project-structure</story-id>
+    <story-title>프로젝트 구조 생성</story-title>
+    <epic-id>epic-1</epic-id>
+    <epic-title>Foundation (환경 설정)</epic-title>
+    <generated>2025-11-30</generated>
+  </metadata>
+
+  <documentation-artifacts>
+    <artifact type="story" path="docs/sprint-artifacts/1-1-project-structure.md">
+      <summary>
+        Story 1.1: 표준화된 프로젝트 디렉토리 구조 생성
+        4개 AC: 소스 디렉토리, 지원 디렉토리, 엔트리포인트, 테스트 설정
+        5개 Task: 디렉토리 생성, main.lua, conf.lua, .busted, 검증
+      </summary>
+    </artifact>
+
+    <artifact type="tech-spec" path="docs/sprint-artifacts/tech-spec-epic-1.md">
+      <summary>
+        Epic 1 Technical Specification
+        - 프로젝트 구조, 라이브러리, 테스트 환경 설정
+        - AC1-AC7: 구조, 파일, 라이브러리, 테스트 실행 검증
+        - 의존성: Love2D 11.5+, busted, classic, serpent, hump
+      </summary>
+    </artifact>
+
+    <artifact type="architecture" path="docs/game-architecture.md">
+      <summary>
+        Game Architecture Document
+        - ADR-001: src/game/은 Love2D 의존 없이 순수 Lua
+        - 단방향 의존: ui → game (역방향 불가)
+        - Project Structure 섹션이 디렉토리 구조 정의
+      </summary>
+      <relevant-section name="Project Structure">
+        catan/
+        ├── main.lua                 -- Love2D 엔트리포인트
+        ├── conf.lua                 -- Love2D 설정
+        ├── src/
+        │   ├── game/                -- 순수 게임 로직 (Love2D 의존 X)
+        │   ├── players/             -- 플레이어 타입 (확장점)
+        │   ├── ui/                  -- 렌더링 (Love2D 의존)
+        │   ├── scenes/              -- 씬/상태 (hump.gamestate)
+        │   └── utils/               -- 유틸리티
+        ├── lib/                     -- 외부 라이브러리
+        │   ├── classic.lua
+        │   ├── serpent.lua
+        │   └── hump/gamestate.lua
+        ├── assets/
+        │   ├── images/
+        │   └── fonts/
+        ├── tests/
+        │   └── game/                -- busted 테스트
+        └── docs/
+      </relevant-section>
+    </artifact>
+
+    <artifact type="epics" path="docs/epics.md">
+      <summary>
+        Epic 1 in epics.md defines Story 1.1-1.4
+        Story 1.1 AC: 디렉토리 구조 존재, main.lua/conf.lua 존재, .busted 설정
+      </summary>
+    </artifact>
+
+    <artifact type="gdd" path="docs/GDD.md">
+      <summary>
+        Game Design Document - Phase 0: 환경 설정
+        TDD First 원칙, Love2D 11.5, Lua 5.1
+      </summary>
+    </artifact>
+  </documentation-artifacts>
+
+  <existing-code>
+    <!-- Story 1.1은 프로젝트 초기 설정이므로 기존 코드 없음 -->
+    <note>This is the first story - no existing code in src/ or lib/ directories yet.</note>
+  </existing-code>
+
+  <dependencies>
+    <external-dependency name="Love2D" version="11.5+">
+      <purpose>Game engine - provides love.load, love.update, love.draw callbacks</purpose>
+      <install>brew install love (macOS)</install>
+    </external-dependency>
+
+    <external-dependency name="busted" version="latest">
+      <purpose>TDD testing framework for Lua</purpose>
+      <install>luarocks install busted</install>
+    </external-dependency>
+
+    <library name="classic" path="lib/classic.lua" status="to-install">
+      <purpose>Lua OOP class system</purpose>
+      <source>https://github.com/rxi/classic</source>
+      <license>MIT</license>
+    </library>
+
+    <library name="serpent" path="lib/serpent.lua" status="to-install">
+      <purpose>Lua serialization</purpose>
+      <source>https://github.com/pkulchenko/serpent</source>
+      <license>MIT</license>
+    </library>
+
+    <library name="hump.gamestate" path="lib/hump/gamestate.lua" status="to-install">
+      <purpose>Scene/state management</purpose>
+      <source>https://github.com/vrld/hump</source>
+      <license>MIT</license>
+    </library>
+  </dependencies>
+
+  <constraints>
+    <constraint type="architecture" source="ADR-001">
+      src/game/ 디렉토리는 Love2D 의존성 없이 순수 Lua로 구현해야 함
+    </constraint>
+    <constraint type="architecture" source="game-architecture.md">
+      단방향 의존: ui → game (역방향 절대 불가)
+    </constraint>
+    <constraint type="version">
+      Love2D 11.5+ 버전 필수 (conf.lua에서 t.version = "11.5" 명시)
+    </constraint>
+    <constraint type="testing">
+      busted가 tests/ 디렉토리를 자동 탐색할 수 있어야 함
+    </constraint>
+  </constraints>
+
+  <acceptance-criteria>
+    <ac id="AC1" title="소스 디렉토리">
+      <description>다음 디렉토리가 존재해야 함:
+        - src/game/ - 순수 게임 로직 (Love2D 의존 X)
+        - src/players/ - 플레이어 타입 (Human, AI 확장점)
+        - src/ui/ - 렌더링 (Love2D 의존)
+        - src/scenes/ - 씬/상태 관리
+        - src/utils/ - 유틸리티
+      </description>
+      <verification>ls -la src/ 명령어로 확인</verification>
+    </ac>
+
+    <ac id="AC2" title="지원 디렉토리">
+      <description>다음 디렉토리가 존재해야 함:
+        - lib/ - 외부 라이브러리
+        - lib/hump/ - hump 라이브러리 서브폴더
+        - tests/game/ - busted 테스트 파일
+        - assets/images/ - 이미지 에셋
+        - assets/fonts/ - 폰트 에셋
+      </description>
+      <verification>ls -la lib/ tests/ assets/ 명령어로 확인</verification>
+    </ac>
+
+    <ac id="AC3" title="엔트리포인트">
+      <description>프로젝트 루트에 다음 파일 존재:
+        - main.lua - Love2D 메인 엔트리포인트
+        - conf.lua - Love2D 설정 파일
+      </description>
+      <verification>ls main.lua conf.lua 명령어로 확인</verification>
+    </ac>
+
+    <ac id="AC4" title="테스트 설정">
+      <description>.busted 설정 파일이 프로젝트 루트에 존재</description>
+      <verification>ls .busted 및 cat .busted로 내용 확인</verification>
+    </ac>
+  </acceptance-criteria>
+
+  <implementation-details>
+    <file-spec name="conf.lua">
+      <![CDATA[
+function love.conf(t)
+  t.window.title = "Settlus of Catan"
+  t.window.width = 1280
+  t.window.height = 720
+  t.window.resizable = false
+  t.version = "11.5"
+  t.console = true  -- Windows에서 콘솔 창 활성화
+end
+      ]]>
+    </file-spec>
+
+    <file-spec name="main.lua">
+      <![CDATA[
+function love.load()
+  -- 초기화 (나중에 구현)
+end
+
+function love.update(dt)
+  -- 업데이트 로직 (나중에 구현)
+end
+
+function love.draw()
+  -- 렌더링 (나중에 구현)
+  love.graphics.print("Settlus of Catan - Foundation", 10, 10)
+end
+      ]]>
+    </file-spec>
+
+    <file-spec name=".busted">
+      <![CDATA[
+return {
+  _all = {
+    coverage = false,
+    lpath = "src/?.lua;src/?/init.lua;lib/?.lua",
+  },
+  default = {
+    verbose = true,
+    ROOT = {"tests/"},
+  },
+}
+      ]]>
+    </file-spec>
+
+    <directory-structure>
+      <dir>src/game/</dir>
+      <dir>src/players/</dir>
+      <dir>src/ui/</dir>
+      <dir>src/scenes/</dir>
+      <dir>src/utils/</dir>
+      <dir>lib/</dir>
+      <dir>lib/hump/</dir>
+      <dir>tests/game/</dir>
+      <dir>assets/images/</dir>
+      <dir>assets/fonts/</dir>
+    </directory-structure>
+  </implementation-details>
+
+  <test-ideas>
+    <test-idea type="verification">
+      모든 디렉토리 존재 확인: ls -la 명령어로 검증
+    </test-idea>
+    <test-idea type="verification">
+      main.lua, conf.lua, .busted 파일 존재 확인
+    </test-idea>
+    <test-idea type="manual">
+      love . 실행하여 1280x720 창이 열리고 타이틀바에 "Settlus of Catan" 표시 확인
+    </test-idea>
+    <test-idea type="note">
+      실제 busted 테스트는 Story 1.3에서 작성 예정 (라이브러리 설치 후)
+    </test-idea>
+  </test-ideas>
+
+  <task-sequence>
+    <task id="1" title="디렉토리 구조 생성" ac="1,2">
+      <subtask>src/ 하위 디렉토리 생성 (game, players, ui, scenes, utils)</subtask>
+      <subtask>lib/ 및 lib/hump/ 디렉토리 생성</subtask>
+      <subtask>tests/game/ 디렉토리 생성</subtask>
+      <subtask>assets/ 하위 디렉토리 생성 (images, fonts)</subtask>
+    </task>
+    <task id="2" title="main.lua 생성" ac="3">
+      <subtask>기본 Love2D 콜백 구조 작성 (love.load, love.update, love.draw)</subtask>
+      <subtask>빈 구현으로 시작 (placeholder)</subtask>
+    </task>
+    <task id="3" title="conf.lua 생성" ac="3">
+      <subtask>창 설정: 1280x720, 타이틀 "Settlus of Catan"</subtask>
+      <subtask>Love2D 버전: 11.5</subtask>
+      <subtask>콘솔 출력 활성화 (디버그용)</subtask>
+    </task>
+    <task id="4" title=".busted 설정 파일 생성" ac="4">
+      <subtask>lpath 설정: src/ 및 lib/ 경로 포함</subtask>
+      <subtask>ROOT 설정: tests/ 디렉토리</subtask>
+    </task>
+    <task id="5" title="검증">
+      <subtask>모든 디렉토리 존재 확인 (ls -la)</subtask>
+      <subtask>main.lua, conf.lua 파일 존재 확인</subtask>
+      <subtask>.busted 파일 존재 확인</subtask>
+    </task>
+  </task-sequence>
+</story-context>

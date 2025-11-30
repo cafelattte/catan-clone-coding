@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs:*)",
+      "mcp__serena__list_dir",
+      "SlashCommand(/bmad:bmgd:workflows:code-review)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

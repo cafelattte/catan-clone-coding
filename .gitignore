@@ -1,0 +1,26 @@
+# Love2D / Lua
+*.love
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Lua
+*.luac
+luacov.*
+
+# Dependencies (if using luarocks locally)
+lua_modules/
+.luarocks/
+
+# Build outputs
+build/
+dist/
+
+# Test coverage
+coverage/
