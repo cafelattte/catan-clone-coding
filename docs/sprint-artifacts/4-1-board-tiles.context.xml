@@ -1,0 +1,219 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>1</storyId>
+    <title>보드 타일 생성</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-1-board-tiles.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>19개 헥스 타일로 구성된 보드를 생성할 수 있어</iWant>
+    <soThat>카탄 표준 보드 레이아웃 사용 가능</soThat>
+    <tasks>
+      <task id="1" ac="1">
+        <title>Board 모듈 기본 구조 생성</title>
+        <subtask id="1.1">src/game/board.lua 파일 생성</subtask>
+        <subtask id="1.2">Board 메타테이블 및 Board.new() 구현 (빈 보드)</subtask>
+        <subtask id="1.3">self.tiles = {} Map 구조 초기화</subtask>
+      </task>
+      <task id="2" ac="1,3,4">
+        <title>표준 보드 좌표 정의</title>
+        <subtask id="2.1">19개 헥스 좌표 상수 정의 (중심 + 내부링 6개 + 외부링 12개)</subtask>
+        <subtask id="2.2">BOARD_COORDS 테이블 구현</subtask>
+      </task>
+      <task id="3" ac="2">
+        <title>타일 분포 상수 추가</title>
+        <subtask id="3.1">src/game/constants.lua에 TILE_DISTRIBUTION 추가</subtask>
+        <subtask id="3.2">TERRAIN_TYPES 배열 추가 (순회용)</subtask>
+      </task>
+      <task id="4" ac="2">
+        <title>타일 풀 생성 및 셔플</title>
+        <subtask id="4.1">createTilePool() 함수 - 분포대로 지형 목록 생성</subtask>
+        <subtask id="4.2">shuffle(table) 함수 - Fisher-Yates 알고리즘</subtask>
+      </task>
+      <task id="5" ac="1,2,3,4,5">
+        <title>Board.newStandard() 구현</title>
+        <subtask id="5.1">타일 풀 생성 및 셔플</subtask>
+        <subtask id="5.2">좌표에 타일 배치 (Map 키: "q,r")</subtask>
+        <subtask id="5.3">사막 타일 number = nil 처리</subtask>
+        <subtask id="5.4">도둑 초기 위치 설정 (사막 좌표)</subtask>
+      </task>
+      <task id="6" ac="3,4">
+        <title>타일 조회 API 구현</title>
+        <subtask id="6.1">board:getTile(q, r) - Map에서 조회</subtask>
+        <subtask id="6.2">board:getAllTiles() - 전체 목록 반환</subtask>
+        <subtask id="6.3">키 생성 헬퍼 tileKey(q, r) → "q,r"</subtask>
+      </task>
+      <task id="7" ac="6">
+        <title>테스트 작성</title>
+        <subtask id="7.1">tests/game/board_spec.lua 파일 생성</subtask>
+        <subtask id="7.2">"Board.new()" 빈 보드 테스트</subtask>
+        <subtask id="7.3">"Board.newStandard()" 19개 타일 테스트</subtask>
+        <subtask id="7.4">지형 분포 검증 테스트</subtask>
+        <subtask id="7.5">getTile(0, 0) 중앙 타일 테스트</subtask>
+        <subtask id="7.6">getAllTiles() 목록 길이 테스트</subtask>
+        <subtask id="7.7">사막 타일 number nil 테스트</subtask>
+        <subtask id="7.8">모든 테스트 통과 확인: busted tests/game/board_spec.lua</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC4-1-1">Board.new() 호출 시 빈 보드 생성, Board.newStandard() 호출 시 19개 타일 생성</criterion>
+    <criterion id="AC4-1-2">타일 분포가 GDD 명세와 일치 (숲 4, 언덕 3, 목초지 4, 농장 4, 산 3, 사막 1)</criterion>
+    <criterion id="AC4-1-3">board:getTile(0, 0) → 중앙 타일 정보 {q, r, terrain, number} 반환</criterion>
+    <criterion id="AC4-1-4">board:getAllTiles() → 19개 타일 목록 반환</criterion>
+    <criterion id="AC4-1-5">사막 타일은 number가 nil</criterion>
+    <criterion id="AC4-1-6">테스트 통과: tests/game/board_spec.lua</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic Technical Specification: Board State</title>
+        <section>Story 4-1: 보드 타일 생성</section>
+        <snippet>Board.newStandard() 호출 시 19개 타일 생성, 타일 분포 GDD 일치, Map 기반 저장 (ADR-003)</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Settlus of Catan - Game Architecture</title>
+        <section>Project Structure, ADR-003</section>
+        <snippet>board.lua는 src/game/ 내 순수 Lua로 구현, Map 기반 건물 저장 (정규화된 좌표 문자열 키)</snippet>
+      </doc>
+      <doc>
+        <path>docs/GDD.md</path>
+        <title>Settlus of Catan - Game Design Document</title>
+        <section>타일 분포</section>
+        <snippet>숲 4, 언덕 3, 목초지 4, 농장 4, 산 3, 사막 1 (총 19개)</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Settlus of Catan - Epic Breakdown</title>
+        <section>Story 4.1: 보드 타일 생성</section>
+        <snippet>19개 헥스 타일 생성, 지형 분포 GDD 일치, getTile/getAllTiles API</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/game/constants.lua</path>
+        <kind>module</kind>
+        <symbol>Constants</symbol>
+        <lines>1-39</lines>
+        <reason>RESOURCE_TYPES, BUILD_COSTS 정의; TILE_DISTRIBUTION, TERRAIN_TYPES 추가 필요</reason>
+      </file>
+      <file>
+        <path>src/game/hex.lua</path>
+        <kind>module</kind>
+        <symbol>Hex</symbol>
+        <lines>1-156</lines>
+        <reason>axialToCube, getNeighbors 등 좌표 변환 함수 - board 모듈에서 활용 가능</reason>
+      </file>
+      <file>
+        <path>src/game/vertex.lua</path>
+        <kind>module</kind>
+        <symbol>Vertex</symbol>
+        <reason>정점 정규화 - 스토리 4-3에서 사용, 현재 스토리와 직접 연관 없음</reason>
+      </file>
+      <file>
+        <path>src/game/edge.lua</path>
+        <kind>module</kind>
+        <symbol>Edge</symbol>
+        <reason>변 정규화 - 스토리 4-4에서 사용, 현재 스토리와 직접 연관 없음</reason>
+      </file>
+      <file>
+        <path>tests/game/constants_spec.lua</path>
+        <kind>test</kind>
+        <symbol>describe("Constants")</symbol>
+        <reason>테스트 패턴 참조용 - BDD 스타일 (describe, it, assert)</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="lua">
+        <package name="busted" version="latest">TDD/BDD 테스트 프레임워크</package>
+        <package name="luassert" version="(busted 내장)">assertion 라이브러리</package>
+      </ecosystem>
+      <ecosystem name="love2d">
+        <note>board.lua는 Love2D 의존성 없이 순수 Lua로 구현</note>
+      </ecosystem>
+      <libs>
+        <lib path="lib/classic.lua">클래스 시스템 (선택적)</lib>
+        <lib path="lib/serpent.lua">직렬화 (디버깅용)</lib>
+      </libs>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture ADR-001">src/game/ 모듈은 Love2D 의존성 없이 순수 Lua로 구현</constraint>
+    <constraint source="Architecture ADR-003">Map 기반 저장: tiles["q,r"] = {q, r, terrain, number} 형식</constraint>
+    <constraint source="Dev Notes">busted로 독립 테스트 가능해야 함</constraint>
+    <constraint source="Tech Spec">직렬화 가능한 데이터 구조 (serpent 호환)</constraint>
+    <constraint source="Story">숫자 토큰은 Story 4-2에서 구현, 이 스토리에서는 사막만 nil 처리</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Board.new()</name>
+      <kind>constructor</kind>
+      <signature>function Board.new() -> Board</signature>
+      <path>src/game/board.lua</path>
+      <notes>빈 보드 생성, tiles = {} 초기화</notes>
+    </interface>
+    <interface>
+      <name>Board.newStandard()</name>
+      <kind>constructor</kind>
+      <signature>function Board.newStandard() -> Board</signature>
+      <path>src/game/board.lua</path>
+      <notes>19개 타일로 초기화된 표준 카탄 보드</notes>
+    </interface>
+    <interface>
+      <name>board:getTile(q, r)</name>
+      <kind>method</kind>
+      <signature>function board:getTile(q: number, r: number) -> tile | nil</signature>
+      <path>src/game/board.lua</path>
+      <notes>타일 정보 반환: {q, r, terrain, number}</notes>
+    </interface>
+    <interface>
+      <name>board:getAllTiles()</name>
+      <kind>method</kind>
+      <signature>function board:getAllTiles() -> table</signature>
+      <path>src/game/board.lua</path>
+      <notes>모든 타일 목록 반환 (19개)</notes>
+    </interface>
+    <interface>
+      <name>TILE_DISTRIBUTION</name>
+      <kind>constant</kind>
+      <signature>table {forest=4, hills=3, pasture=4, fields=4, mountains=3, desert=1}</signature>
+      <path>src/game/constants.lua</path>
+      <notes>constants.lua에 추가 필요</notes>
+    </interface>
+    <interface>
+      <name>TERRAIN_TYPES</name>
+      <kind>constant</kind>
+      <signature>table {"forest", "hills", "pasture", "fields", "mountains", "desert"}</signature>
+      <path>src/game/constants.lua</path>
+      <notes>constants.lua에 추가 필요</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>busted BDD 스타일 테스트 사용. describe() 블록으로 모듈/함수 그룹화, it() 블록으로 개별 테스트 케이스 정의. before_each()로 테스트 setup. AAA 패턴 (Arrange-Act-Assert) 준수. assert.equals(), assert.is_nil(), assert.is_true() 등 luassert 활용.</standards>
+    <locations>
+      <location>tests/game/board_spec.lua</location>
+      <location>tests/game/*.lua</location>
+    </locations>
+    <ideas>
+      <idea ac="AC4-1-1">Board.new()가 빈 tiles 테이블 반환 검증</idea>
+      <idea ac="AC4-1-1">Board.newStandard()가 19개 타일 생성 검증</idea>
+      <idea ac="AC4-1-2">지형별 카운트: forest=4, hills=3, pasture=4, fields=4, mountains=3, desert=1</idea>
+      <idea ac="AC4-1-3">getTile(0,0) 중앙 타일 존재 및 구조 검증</idea>
+      <idea ac="AC4-1-4">getAllTiles() 반환 목록 길이 = 19</idea>
+      <idea ac="AC4-1-5">사막 타일 찾아서 number == nil 검증</idea>
+      <idea ac="AC4-1-6">busted tests/game/board_spec.lua 실행 시 0 failures</idea>
+    </ideas>
+  </tests>
+</story-context>

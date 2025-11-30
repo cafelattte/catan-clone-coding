@@ -35,4 +35,34 @@ Constants.BUILDING_POINTS = {
   city = 2
 }
 
+-- 지형 타입 (순회용)
+Constants.TERRAIN_TYPES = {
+  "forest",
+  "hills",
+  "pasture",
+  "fields",
+  "mountains",
+  "desert"
+}
+
+-- 타일 분포 (GDD 명세)
+Constants.TILE_DISTRIBUTION = {
+  forest = 4,    -- 목재
+  hills = 3,     -- 벽돌
+  pasture = 4,   -- 양모
+  fields = 4,    -- 밀
+  mountains = 3, -- 광석
+  desert = 1     -- 없음
+}
+
+-- 지형 → 자원 매핑
+Constants.TERRAIN_RESOURCE = {
+  forest = "wood",
+  hills = "brick",
+  pasture = "sheep",
+  fields = "wheat",
+  mountains = "ore",
+  desert = nil
+}
+
 return Constants
