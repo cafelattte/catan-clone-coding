@@ -44,8 +44,8 @@ development_status:
 
   # Epic 2: Core Data Model
   epic-2: contexted
-  2-1-resource-types-constants: backlog
-  2-2-building-costs: backlog
+  2-1-resource-types-constants: done
+  2-2-building-costs: done
   2-3-player-resources-basic: backlog
   2-4-player-resources-deduction: backlog
   2-5-player-victory-points: backlog

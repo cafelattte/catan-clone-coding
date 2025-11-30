@@ -6,7 +6,8 @@
       "SlashCommand(/bmad:bmgd:workflows:code-review)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "SlashCommand(/bmad:bmgd:workflows:epic-tech-context)"
+      "SlashCommand(/bmad:bmgd:workflows:epic-tech-context)",
+      "Bash(busted:*)"
     ],
     "deny": [],
     "ask": []
