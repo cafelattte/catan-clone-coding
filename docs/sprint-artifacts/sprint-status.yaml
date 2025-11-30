@@ -39,7 +39,7 @@ development_status:
   1-1-project-structure: done
   1-2-external-libraries: done
   1-3-test-environment: done
-  1-4-love2d-setup: backlog
+  1-4-love2d-setup: done
   epic-1-retrospective: optional
 
   # Epic 2: Core Data Model
