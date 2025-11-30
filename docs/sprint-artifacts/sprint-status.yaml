@@ -43,7 +43,7 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Core Data Model
-  epic-2: backlog
+  epic-2: contexted
   2-1-resource-types-constants: backlog
   2-2-building-costs: backlog
   2-3-player-resources-basic: backlog

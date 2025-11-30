@@ -5,7 +5,8 @@
       "mcp__serena__list_dir",
       "SlashCommand(/bmad:bmgd:workflows:code-review)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "SlashCommand(/bmad:bmgd:workflows:epic-tech-context)"
     ],
     "deny": [],
     "ask": []
