@@ -4,7 +4,8 @@
       "Bash(xargs:*)",
       "mcp__serena__list_dir",
       "SlashCommand(/bmad:bmgd:workflows:code-review)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
