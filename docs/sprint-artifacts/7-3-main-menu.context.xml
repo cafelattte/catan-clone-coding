@@ -1,0 +1,171 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>3</storyId>
+    <title>메인 메뉴 씬</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/7-3-main-menu.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>게임 시작 시 메인 메뉴가 표시되어</iWant>
+    <soThat>새 게임을 시작하거나 종료할 수 있음</soThat>
+    <tasks>
+      <task id="1" ac="7-3.1">메인 메뉴 씬 파일 생성 (src/scenes/menu.lua)</task>
+      <task id="2" ac="7-3.1">버튼 UI 구현 (New Game, Exit)</task>
+      <task id="3" ac="7-3.2">플레이어 수 선택 UI (2, 3, 4인 선택)</task>
+      <task id="4" ac="7-3.3">씬 전환 연동 (main.lua + hump.gamestate)</task>
+      <task id="5" ac="7-3.4">게임 종료 기능 (love.event.quit)</task>
+      <task id="6" ac="7-3.5">키보드 입력 지원 (ESC, Enter - 선택)</task>
+      <task id="7" ac="7-3.3">game 씬 스텁 생성 (src/scenes/game.lua)</task>
+      <task id="8" ac="All">수동 검증 (메뉴→게임 전환, 종료)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="7-3.1" title="메인 메뉴 기본 표시">
+      <requirement>게임 실행 시 초기 로드 완료 후 메인 메뉴 씬 표시</requirement>
+      <requirement>"Settlus of Catan" 게임 타이틀 표시</requirement>
+      <requirement>"New Game" 버튼 표시</requirement>
+      <requirement>"Exit" 버튼 표시</requirement>
+    </criterion>
+    <criterion id="7-3.2" title="새 게임 시작 - 플레이어 수 선택">
+      <requirement>"New Game" 클릭 시 플레이어 수 선택 UI 표시</requirement>
+      <requirement>2, 3, 4인 게임 선택 옵션 제공</requirement>
+      <requirement>선택 취소 시 메인 메뉴로 복귀 가능</requirement>
+    </criterion>
+    <criterion id="7-3.3" title="게임 씬 전환">
+      <requirement>플레이어 수 선택 후 게임 씬으로 전환</requirement>
+      <requirement>선택된 플레이어 수로 GameState 생성</requirement>
+      <requirement>전환 시 이전 상태 정리 (메모리 누수 방지)</requirement>
+    </criterion>
+    <criterion id="7-3.4" title="게임 종료">
+      <requirement>"Exit" 클릭 시 게임 종료 (love.event.quit())</requirement>
+      <requirement>확인 없이 즉시 종료 (MVP 단순화)</requirement>
+    </criterion>
+    <criterion id="7-3.5" title="키보드 입력 지원 (선택)">
+      <requirement>ESC 키로 Exit 동작 (선택 사항)</requirement>
+      <requirement>Enter 키로 New Game 동작 (선택 사항)</requirement>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Game Architecture</title>
+        <section>Project Structure</section>
+        <snippet>src/scenes/ 디렉토리에 menu.lua, game.lua, game_over.lua 씬 파일 배치. hump.gamestate 기반 씬 관리.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Game Architecture</title>
+        <section>Core Architecture Principles</section>
+        <snippet>로직/렌더링 분리 원칙. src/game/은 순수 Lua, src/ui/는 Love2D 의존.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-7.md</path>
+        <title>Epic 7 Technical Specification</title>
+        <section>씬 인터페이스 (hump.gamestate 호환)</section>
+        <snippet>enter(self, previous, ...), leave(self), update(self, dt), draw(self), keypressed(self, key), mousepressed(self, x, y, button) 콜백 구현.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-7.md</path>
+        <title>Epic 7 Technical Specification</title>
+        <section>게임 플로우 시퀀스</section>
+        <snippet>Menu Scene → 플레이어 수 선택 → Game Scene (GameState 생성) → Game Over Scene 플로우.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 7.3: 메인 메뉴 씬</section>
+        <snippet>hump.gamestate 사용. New Game 클릭 시 플레이어 수 선택(2-4), Exit 클릭 시 게임 종료.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>main.lua</path>
+        <kind>entrypoint</kind>
+        <symbol>love.load, love.draw, love.keypressed, love.mousepressed</symbol>
+        <lines>1-303</lines>
+        <reason>현재 main.lua는 직접 보드를 렌더링. hump.gamestate로 전환 필요. 대부분의 로직을 game 씬으로 이동해야 함.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/hump/gamestate.lua</path>
+        <kind>library</kind>
+        <symbol>GS.switch, GS.push, GS.pop, GS.registerEvents</symbol>
+        <lines>1-114</lines>
+        <reason>씬 관리 라이브러리. Gamestate.registerEvents()로 Love2D 콜백 연동, Gamestate.switch(scene, ...)로 씬 전환.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/game_state.lua</path>
+        <kind>module</kind>
+        <symbol>GameState:new, GameState:getCurrentPlayer, GameState:getPhase</symbol>
+        <lines>14-48</lines>
+        <reason>게임 상태 관리. menu 씬에서 GameState.new(playerCount)로 생성 후 game 씬으로 전달.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="love" version="11.5+">Love2D 게임 엔진</package>
+        <package name="hump.gamestate" version="latest">씬/상태 관리</package>
+        <package name="classic" version="latest">클래스 시스템</package>
+      </lua>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">씬(UI)은 GameState를 *소유*하지 않고 *참조*만 함 (tech-spec 설계 원칙)</constraint>
+    <constraint type="pattern">모든 씬은 hump.gamestate 호환 콜백 구현: enter, leave, update, draw, keypressed, mousepressed</constraint>
+    <constraint type="layer">src/scenes/는 UI 레이어. GameState(src/game/)와 분리 유지</constraint>
+    <constraint type="naming">파일명 snake_case, 모듈/클래스 PascalCase, 함수 camelCase</constraint>
+    <constraint type="simplicity">버튼 UI는 간단한 히트박스 검출로 구현 (별도 UI 라이브러리 없음)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>hump.gamestate API</name>
+      <kind>library</kind>
+      <signature>
+        Gamestate.registerEvents() - Love2D 콜백 연동
+        Gamestate.switch(scene, ...) - 즉시 씬 전환
+        Gamestate.push(scene, ...) - 스택에 추가
+        Gamestate.pop() - 스택에서 제거
+      </signature>
+      <path>lib/hump/gamestate.lua</path>
+    </interface>
+    <interface>
+      <name>GameState.new</name>
+      <kind>constructor</kind>
+      <signature>GameState.new(playerCount: number) -> GameState</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>love.event.quit</name>
+      <kind>Love2D API</kind>
+      <signature>love.event.quit() - 게임 종료</signature>
+      <path>Love2D built-in</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>UI 씬은 주로 수동 테스트. game_state.lua의 로직은 busted 테스트. tests/ 디렉토리에 _spec.lua 파일로 작성. describe/it 패턴 사용.</standards>
+    <locations>
+      <location>tests/game/game_state_spec.lua</location>
+      <location>수동 테스트: love . 실행</location>
+    </locations>
+    <ideas>
+      <idea ac="7-3.1">love . 실행 시 메인 메뉴 표시 확인 (수동)</idea>
+      <idea ac="7-3.1">타이틀 "Settlus of Catan" 텍스트 렌더링 확인 (수동)</idea>
+      <idea ac="7-3.2">New Game 클릭 → 플레이어 수 선택 UI 전환 확인 (수동)</idea>
+      <idea ac="7-3.2">2, 3, 4 버튼 클릭 시 각각 해당 인원으로 GameState 생성 확인 (수동)</idea>
+      <idea ac="7-3.3">게임 씬 전환 시 GameState 파라미터 전달 확인 (수동/콘솔 로그)</idea>
+      <idea ac="7-3.4">Exit 클릭 시 게임 종료 확인 (수동)</idea>
+      <idea ac="7-3.5">ESC 키 동작 확인 (선택 - 수동)</idea>
+      <idea ac="7-3.3">씬 전환 반복 시 메모리 누수 없음 확인 (collectgarbage 체크)</idea>
+    </ideas>
+  </tests>
+</story-context>
