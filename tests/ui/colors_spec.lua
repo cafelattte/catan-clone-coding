@@ -123,6 +123,15 @@ describe("Colors", function()
       assert.equals(4, #c)  -- RGBA
     end)
 
+    -- Story 6-5: highlight_hover 색상 추가
+    it("should define highlight_hover color with alpha", function()
+      local c = Colors.UI.highlight_hover
+      assert.is_not_nil(c)
+      assert.equals(4, #c)  -- RGBA
+      -- hover 색상은 일반 highlight보다 더 진해야 함 (alpha 값이 더 큼)
+      assert.is_true(c[4] > Colors.UI.highlight[4], "highlight_hover alpha should be greater than highlight alpha")
+    end)
+
     it("should define outline color", function()
       assert.is_not_nil(Colors.UI.outline)
     end)

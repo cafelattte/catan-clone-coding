@@ -242,6 +242,81 @@ function BoardView.drawBuildings(buildings, hexSize, offsetX, offsetY)
 end
 
 ---
+-- 정점 하이라이트 렌더링 (원)
+-- @param px number 중심 X 좌표
+-- @param py number 중심 Y 좌표
+-- @param radius number 원 반지름 (기본 8)
+-- @param color table RGBA 색상 (기본 Colors.UI.highlight)
+---
+function BoardView.drawVertexHighlight(px, py, radius, color)
+  radius = radius or 8
+  color = color or Colors.UI.highlight
+  love.graphics.setColor(color[1], color[2], color[3], color[4] or 0.3)
+  love.graphics.circle("fill", px, py, radius)
+end
+
+---
+-- 변 하이라이트 렌더링 (두꺼운 선)
+-- @param px1 number 시작점 X 좌표
+-- @param py1 number 시작점 Y 좌표
+-- @param px2 number 끝점 X 좌표
+-- @param py2 number 끝점 Y 좌표
+-- @param width number 선 두께 (기본 6)
+-- @param color table RGBA 색상 (기본 Colors.UI.highlight)
+---
+function BoardView.drawEdgeHighlight(px1, py1, px2, py2, width, color)
+  width = width or 6
+  color = color or Colors.UI.highlight
+  love.graphics.setLineWidth(width)
+  love.graphics.setColor(color[1], color[2], color[3], color[4] or 0.3)
+  love.graphics.line(px1, py1, px2, py2)
+  love.graphics.setLineWidth(1) -- 원래 두께로 복원
+end
+
+---
+-- 건설 가능 위치 하이라이트 전체 렌더링
+-- @param validVertices table|nil 유효한 정점 목록 {{q, r, dir}, ...}
+-- @param validEdges table|nil 유효한 변 목록 {{q, r, dir}, ...}
+-- @param hexSize number 헥스 크기
+-- @param offsetX number X 오프셋
+-- @param offsetY number Y 오프셋
+-- @param hoverVertex table|nil 현재 호버된 정점 {q, r, dir}
+-- @param hoverEdge table|nil 현재 호버된 변 {q, r, dir}
+---
+function BoardView.drawHighlights(validVertices, validEdges, hexSize, offsetX, offsetY, hoverVertex, hoverEdge)
+  local highlightRadius = 8
+  local highlightWidth = 6
+
+  -- 정점 하이라이트
+  if validVertices then
+    for _, v in ipairs(validVertices) do
+      local px, py = getVertexPixel(v.q, v.r, v.dir, hexSize, offsetX, offsetY)
+      -- 호버된 정점인지 확인
+      local isHover = hoverVertex and
+                      hoverVertex.q == v.q and
+                      hoverVertex.r == v.r and
+                      hoverVertex.dir == v.dir
+      local color = isHover and Colors.UI.highlight_hover or Colors.UI.highlight
+      BoardView.drawVertexHighlight(px, py, highlightRadius, color)
+    end
+  end
+
+  -- 변 하이라이트
+  if validEdges then
+    for _, e in ipairs(validEdges) do
+      local px1, py1, px2, py2 = getEdgePixels(e.q, e.r, e.dir, hexSize, offsetX, offsetY)
+      -- 호버된 변인지 확인
+      local isHover = hoverEdge and
+                      hoverEdge.q == e.q and
+                      hoverEdge.r == e.r and
+                      hoverEdge.dir == e.dir
+      local color = isHover and Colors.UI.highlight_hover or Colors.UI.highlight
+      BoardView.drawEdgeHighlight(px1, py1, px2, py2, highlightWidth, color)
+    end
+  end
+end
+
+---
 -- 보드 전체 렌더링
 -- @param board table Board 인스턴스
 -- @param hexSize number 헥스 크기 (픽셀)

@@ -1,0 +1,300 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>5</storyId>
+    <title>Vertex/Edge Selection</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/6-5-vertex-edge-selection.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>건설 가능한 정점/변이 화면에 하이라이트 표시되고, 클릭하여 선택할 수 있기를</iWant>
+    <soThat>정착지, 도시, 도로를 배치할 위치를 시각적으로 확인하고 선택할 수 있다</soThat>
+    <tasks>
+      <task n="1" title="BoardView 하이라이트 함수 구현">
+        <subtask>1.1 BoardView.drawVertexHighlight(px, py, radius, color) 함수 구현</subtask>
+        <subtask>1.2 BoardView.drawEdgeHighlight(px1, py1, px2, py2, width, color) 함수 구현</subtask>
+        <subtask>1.3 반투명 색상 처리 (alpha 채널)</subtask>
+      </task>
+      <task n="2" title="건설 가능 위치 시각화">
+        <subtask>2.1 validVertices 목록을 받아 모든 정점 하이라이트 그리기</subtask>
+        <subtask>2.2 validEdges 목록을 받아 모든 변 하이라이트 그리기</subtask>
+        <subtask>2.3 BoardView.drawHighlights(validVertices, validEdges, hexSize, offsetX, offsetY) 통합 함수</subtask>
+      </task>
+      <task n="3" title="선택 상태 관리">
+        <subtask>3.1 현재 선택 모드 추적 (none, settlement, city, road)</subtask>
+        <subtask>3.2 선택 모드에 따른 유효 위치 계산</subtask>
+        <subtask>3.3 선택된 좌표 저장 및 반환</subtask>
+      </task>
+      <task n="4" title="호버 감지 및 피드백">
+        <subtask>4.1 love.mousemoved 콜백에서 현재 호버 위치 추적</subtask>
+        <subtask>4.2 호버된 정점/변 강조 표시 (다른 색상 또는 크기)</subtask>
+        <subtask>4.3 유효한 위치에서만 호버 피드백 표시</subtask>
+      </task>
+      <task n="5" title="main.lua 통합">
+        <subtask>5.1 선택 모드 토글 (키보드 단축키 또는 버튼)</subtask>
+        <subtask>5.2 love.mousepressed에서 선택 처리</subtask>
+        <subtask>5.3 love.draw에서 하이라이트 렌더링</subtask>
+      </task>
+      <task n="6" title="테스트 작성">
+        <subtask>6.1 BoardView 하이라이트 함수 시각적 검증 (수동)</subtask>
+        <subtask>6.2 선택 모드 전환 테스트</subtask>
+        <subtask>6.3 유효 위치 필터링 테스트</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="6-5.1" title="건설 가능 정점 하이라이트">
+      <item>건설 모드에서 유효한 정점 위치에 하이라이트 원 표시</item>
+      <item>하이라이트 색상은 반투명 노랑 또는 흰색</item>
+      <item>유효하지 않은 정점은 하이라이트 없음</item>
+    </criterion>
+    <criterion id="6-5.2" title="건설 가능 변 하이라이트">
+      <item>건설 모드에서 유효한 변 위치에 하이라이트 선 표시</item>
+      <item>하이라이트 색상은 반투명 노랑 또는 흰색</item>
+      <item>유효하지 않은 변은 하이라이트 없음</item>
+    </criterion>
+    <criterion id="6-5.3" title="정점 클릭 선택">
+      <item>하이라이트된 정점 클릭 시 해당 정점 좌표 반환</item>
+      <item>선택된 정점은 게임 로직에 전달 가능</item>
+      <item>threshold 내 클릭만 유효 (Input.pixelToVertex 활용)</item>
+    </criterion>
+    <criterion id="6-5.4" title="변 클릭 선택">
+      <item>하이라이트된 변 클릭 시 해당 변 좌표 반환</item>
+      <item>선택된 변은 게임 로직에 전달 가능</item>
+      <item>threshold 내 클릭만 유효 (Input.pixelToEdge 활용)</item>
+    </criterion>
+    <criterion id="6-5.5" title="호버 피드백">
+      <item>마우스가 유효한 정점/변 위에 있을 때 강조 표시</item>
+      <item>호버 시 색상 변화 또는 크기 증가로 시각적 피드백</item>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>AC-6.5: 정점/변 선택</section>
+        <snippet>정점 근처 클릭 시 해당 정점의 (q, r, dir) 좌표가 반환됨. 변 근처 클릭 시 해당 변의 (q, r, dir) 좌표가 반환됨. 건설 가능 위치가 하이라이트 표시됨.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>Detailed Design - board_view.lua Interface</section>
+        <snippet>BoardView.drawVertexHighlight(px, py, radius)와 BoardView.drawEdgeHighlight(px1, py1, px2, py2, width) 함수 시그니처 정의됨.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>Workflows - 렌더링 순서</section>
+        <snippet>렌더링 순서: 1.배경 클리어 2.헥스 타일 3.숫자 토큰 4.도로 5.건물 6.하이라이트(선택/호버) 7.HUD</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>Dependencies - 설정 상수</section>
+        <snippet>VERTEX_THRESHOLD=15, EDGE_THRESHOLD=10, HIGHLIGHT_RADIUS=8, HIGHLIGHT_WIDTH=6 픽셀 값 정의됨.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Game Architecture</title>
+        <section>Core Architecture Principles - 로직/렌더링 분리</section>
+        <snippet>src/game/은 순수 Lua, src/ui/는 Love2D 의존. 단방향 의존성 유지.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Game Architecture</title>
+        <section>Coordinate System Architecture</section>
+        <snippet>정점: {q, r, dir} (N/S만 사용), 변: {q, r, dir} (NE/E/SE만 사용). 정규화 규칙으로 동일 위치 통일.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>src/ui/input.lua</path>
+        <kind>input-handler</kind>
+        <symbol>Input.pixelToVertex</symbol>
+        <lines>164-213</lines>
+        <reason>정점 클릭 감지에 직접 활용 - threshold 체크 및 정규화된 좌표 반환</reason>
+      </file>
+      <file>
+        <path>src/ui/input.lua</path>
+        <kind>input-handler</kind>
+        <symbol>Input.pixelToEdge</symbol>
+        <lines>225-274</lines>
+        <reason>변 클릭 감지에 직접 활용 - pointToSegmentDistance 사용하여 가장 가까운 변 반환</reason>
+      </file>
+      <file>
+        <path>src/ui/input.lua</path>
+        <kind>input-handler</kind>
+        <symbol>Input.getVertexPixel</symbol>
+        <lines>95-107</lines>
+        <reason>정점 하이라이트 위치 계산에 활용 - 정점의 픽셀 좌표 반환</reason>
+      </file>
+      <file>
+        <path>src/ui/input.lua</path>
+        <kind>input-handler</kind>
+        <symbol>Input.getEdgePixels</symbol>
+        <lines>119-124</lines>
+        <reason>변 하이라이트 끝점 계산에 활용 - 변의 양 끝점 픽셀 좌표 반환</reason>
+      </file>
+      <file>
+        <path>src/ui/board_view.lua</path>
+        <kind>renderer</kind>
+        <symbol>BoardView.draw</symbol>
+        <lines>252-282</lines>
+        <reason>하이라이트 렌더링 통합 위치 - 건물 렌더링 후 하이라이트 추가 필요</reason>
+      </file>
+      <file>
+        <path>src/ui/board_view.lua</path>
+        <kind>renderer</kind>
+        <symbol>getVertexPixel</symbol>
+        <lines>93-105</lines>
+        <reason>내부 헬퍼 함수 - Input.getVertexPixel과 동일한 로직, 재사용 가능</reason>
+      </file>
+      <file>
+        <path>src/ui/board_view.lua</path>
+        <kind>renderer</kind>
+        <symbol>getEdgePixels</symbol>
+        <lines>117-122</lines>
+        <reason>내부 헬퍼 함수 - Input.getEdgePixels와 동일한 로직, 재사용 가능</reason>
+      </file>
+      <file>
+        <path>src/ui/colors.lua</path>
+        <kind>constants</kind>
+        <symbol>Colors.UI.highlight</symbol>
+        <lines>35</lines>
+        <reason>기본 하이라이트 색상 정의됨 - {1, 1, 0, 0.3} 반투명 노랑. 호버용 색상 추가 필요</reason>
+      </file>
+      <file>
+        <path>src/game/rules.lua</path>
+        <kind>game-logic</kind>
+        <symbol>Rules.getValidSettlementLocations</symbol>
+        <lines>191-238</lines>
+        <reason>건설 가능한 정착지 위치 목록 반환 - 하이라이트할 정점 목록 제공</reason>
+      </file>
+      <file>
+        <path>src/game/rules.lua</path>
+        <kind>game-logic</kind>
+        <symbol>Rules.getValidRoadLocations</symbol>
+        <lines>242-282</lines>
+        <reason>건설 가능한 도로 위치 목록 반환 - 하이라이트할 변 목록 제공</reason>
+      </file>
+      <file>
+        <path>main.lua</path>
+        <kind>entry-point</kind>
+        <symbol>love.mousepressed</symbol>
+        <lines>99-131</lines>
+        <reason>클릭 처리 콜백 - 선택 로직 확장 필요 (현재는 디버그 출력만)</reason>
+      </file>
+      <file>
+        <path>main.lua</path>
+        <kind>entry-point</kind>
+        <symbol>love.draw</symbol>
+        <lines>81-96</lines>
+        <reason>렌더링 루프 - 하이라이트 렌더링 호출 추가 필요 (건물과 HUD 사이)</reason>
+      </file>
+    </code>
+    <dependencies>
+      <lua>
+        <package>love2d</package>
+        <version>11.5+</version>
+        <used-for>Graphics rendering, input handling</used-for>
+      </lua>
+      <lua>
+        <package>busted</package>
+        <version>latest</version>
+        <used-for>Testing framework</used-for>
+      </lua>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">src/ui/ 모듈은 src/game/에만 의존 가능 (단방향)</constraint>
+    <constraint type="architecture">게임 로직 모듈(src/game/)은 Love2D 의존성 없음 유지</constraint>
+    <constraint type="rendering">렌더링 순서 준수: 헥스 → 토큰 → 도로 → 건물 → 하이라이트 → HUD</constraint>
+    <constraint type="pattern">좌표 문자열 형식: 정점 "(q,r,dir)", 변 "(q,r,dir)" 형식 유지</constraint>
+    <constraint type="pattern">정점 방향: N/S만 사용, 변 방향: NE/E/SE만 사용 (정규화)</constraint>
+    <constraint type="naming">함수: camelCase, 상수: UPPER_SNAKE, 모듈: PascalCase</constraint>
+    <constraint type="testing">UI 렌더링은 수동 시각 검증, 좌표 로직은 busted 테스트</constraint>
+    <constraint type="performance">60 FPS 유지 - 매 프레임 재계산 최소화</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Input.pixelToVertex</name>
+      <kind>function</kind>
+      <signature>function Input.pixelToVertex(px, py, hexSize, offsetX, offsetY, threshold) -> {q, r, dir} | nil</signature>
+      <path>src/ui/input.lua:164</path>
+    </interface>
+    <interface>
+      <name>Input.pixelToEdge</name>
+      <kind>function</kind>
+      <signature>function Input.pixelToEdge(px, py, hexSize, offsetX, offsetY, threshold) -> {q, r, dir} | nil</signature>
+      <path>src/ui/input.lua:225</path>
+    </interface>
+    <interface>
+      <name>Input.getVertexPixel</name>
+      <kind>function</kind>
+      <signature>function Input.getVertexPixel(q, r, dir, hexSize, offsetX, offsetY) -> px, py</signature>
+      <path>src/ui/input.lua:95</path>
+    </interface>
+    <interface>
+      <name>Input.getEdgePixels</name>
+      <kind>function</kind>
+      <signature>function Input.getEdgePixels(q, r, dir, hexSize, offsetX, offsetY) -> px1, py1, px2, py2</signature>
+      <path>src/ui/input.lua:119</path>
+    </interface>
+    <interface>
+      <name>Rules.getValidSettlementLocations</name>
+      <kind>function</kind>
+      <signature>function Rules.getValidSettlementLocations(board, playerId, isInitialPlacement) -> table of vertices</signature>
+      <path>src/game/rules.lua:191</path>
+    </interface>
+    <interface>
+      <name>Rules.getValidRoadLocations</name>
+      <kind>function</kind>
+      <signature>function Rules.getValidRoadLocations(board, playerId) -> table of edges</signature>
+      <path>src/game/rules.lua:242</path>
+    </interface>
+    <interface>
+      <name>BoardView.draw (to extend)</name>
+      <kind>function</kind>
+      <signature>function BoardView.draw(board, hexSize, offsetX, offsetY, buildings, highlights?)</signature>
+      <path>src/ui/board_view.lua:252</path>
+    </interface>
+    <interface>
+      <name>BoardView.drawVertexHighlight (to create)</name>
+      <kind>function</kind>
+      <signature>function BoardView.drawVertexHighlight(px, py, radius, color)</signature>
+      <path>src/ui/board_view.lua (new)</path>
+    </interface>
+    <interface>
+      <name>BoardView.drawEdgeHighlight (to create)</name>
+      <kind>function</kind>
+      <signature>function BoardView.drawEdgeHighlight(px1, py1, px2, py2, width, color)</signature>
+      <path>src/ui/board_view.lua (new)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>busted 프레임워크 사용 (BDD 스타일). src/game/ 모듈은 단위 테스트 필수. src/ui/ 모듈 중 순수 계산 로직(좌표 변환)은 테스트 가능. 렌더링 함수는 Love2D 의존으로 수동 시각 검증.</standards>
+    <locations>
+      <location>tests/game/*_spec.lua</location>
+      <location>tests/ui/*_spec.lua</location>
+    </locations>
+    <ideas>
+      <idea ac="6-5.1">validVertices 목록의 각 정점이 화면에 하이라이트 원으로 표시되는지 수동 검증</idea>
+      <idea ac="6-5.2">validEdges 목록의 각 변이 화면에 하이라이트 선으로 표시되는지 수동 검증</idea>
+      <idea ac="6-5.3">Input.pixelToVertex 함수가 threshold 내 클릭 시 올바른 정점 좌표 반환 테스트 (기존 tests/ui/input_spec.lua 활용)</idea>
+      <idea ac="6-5.4">Input.pixelToEdge 함수가 threshold 내 클릭 시 올바른 변 좌표 반환 테스트 (기존 tests/ui/input_spec.lua 활용)</idea>
+      <idea ac="6-5.5">호버 시 하이라이트 색상이 변경되는지 수동 검증 (highlight vs highlight_hover)</idea>
+      <idea ac="general">선택 모드 전환 시 올바른 유효 위치만 하이라이트되는지 수동 검증</idea>
+      <idea ac="general">유효하지 않은 위치 클릭 시 선택이 무시되는지 검증</idea>
+    </ideas>
+  </tests>
+</story-context>

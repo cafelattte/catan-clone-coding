@@ -84,7 +84,7 @@ development_status:
   6-2-building-road-rendering: done
   6-3-hud-display: done
   6-4-mouse-to-hex: done
-  6-5-vertex-edge-selection: backlog
+  6-5-vertex-edge-selection: done
   epic-6-retrospective: optional
 
   # Epic 7: Complete Game Flow
