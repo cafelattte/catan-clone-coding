@@ -1,0 +1,270 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>1</storyId>
+    <title>턴 순서 관리</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/7-1-turn-order.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>플레이어 턴 순서를 관리할 수 있어</iWant>
+    <soThat>공정한 게임 진행 가능</soThat>
+    <tasks>
+      <task id="1" ac="7-1.1, 7-1.2, 7-1.3, 7-1.4">
+        <title>GameState 기본 구조 구현</title>
+        <subtasks>
+          <subtask id="1.1">src/game/game_state.lua 파일 생성</subtask>
+          <subtask id="1.2">GameState.new(playerCount) 생성자 구현</subtask>
+          <subtask id="1.3">turn 구조체 초기화 (current, phase, round)</subtask>
+          <subtask id="1.4">players 배열 초기화 (Player 객체들)</subtask>
+          <subtask id="1.5">config 구조체 초기화 (playerCount, victoryTarget)</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="7-1.1">
+        <title>플레이어 조회 API 구현</title>
+        <subtasks>
+          <subtask id="2.1">getCurrentPlayer() 함수 구현 - Player 객체 반환</subtask>
+          <subtask id="2.2">getCurrentPlayerId() 함수 구현 - 플레이어 인덱스 반환</subtask>
+          <subtask id="2.3">getPlayer(id) 함수 구현 - 특정 플레이어 조회</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="7-1.2, 7-1.3, 7-1.4">
+        <title>턴 종료 및 순환 구현</title>
+        <subtasks>
+          <subtask id="3.1">nextPlayer() 함수 구현 - 모듈로 연산으로 순환</subtask>
+          <subtask id="3.2">endTurn() 함수 구현 - nextPlayer 호출 + 라운드 증가 체크</subtask>
+          <subtask id="3.3">getRound() 함수 구현</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="All">
+        <title>테스트 작성</title>
+        <subtasks>
+          <subtask id="4.1">tests/game/game_state_spec.lua 생성</subtask>
+          <subtask id="4.2">2인 게임 턴 순환 테스트</subtask>
+          <subtask id="4.3">3인 게임 턴 순환 테스트</subtask>
+          <subtask id="4.4">4인 게임 턴 순환 테스트</subtask>
+          <subtask id="4.5">라운드 카운터 테스트</subtask>
+          <subtask id="4.6">경계값 테스트 (플레이어4 → 플레이어1)</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="7-1.1">
+      <title>현재 플레이어 조회</title>
+      <checks>
+        <check>GameState with 4 players일 때 game:getCurrentPlayer() 호출 시 현재 턴 플레이어 반환</check>
+        <check>2인, 3인, 4인 게임 모두 지원</check>
+      </checks>
+    </criterion>
+    <criterion id="7-1.2">
+      <title>턴 종료 및 다음 플레이어</title>
+      <checks>
+        <check>플레이어1 턴에서 game:endTurn() 호출 시 현재 플레이어 = 플레이어2</check>
+        <check>플레이어2 턴에서 game:endTurn() 호출 시 현재 플레이어 = 플레이어3</check>
+        <check>플레이어3 턴에서 game:endTurn() 호출 시 현재 플레이어 = 플레이어4</check>
+      </checks>
+    </criterion>
+    <criterion id="7-1.3">
+      <title>순환 (Wrap-around)</title>
+      <checks>
+        <check>플레이어4 턴에서 game:endTurn() 호출 시 현재 플레이어 = 플레이어1 (순환)</check>
+        <check>2인 게임: 플레이어2 → 플레이어1</check>
+        <check>3인 게임: 플레이어3 → 플레이어1</check>
+      </checks>
+    </criterion>
+    <criterion id="7-1.4">
+      <title>라운드 카운터</title>
+      <checks>
+        <check>모든 플레이어가 한 번씩 턴을 마치면 라운드 증가</check>
+        <check>game:getRound() 함수로 현재 라운드 조회 가능</check>
+      </checks>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-7.md</path>
+        <title>Epic Technical Specification: Complete Game Flow</title>
+        <section>Data Models and Contracts - GameState 구조</section>
+        <snippet>GameState 구조체 정의: board, players, mode("setup"|"playing"|"finished"), turn{current, phase, round}, setup{...}, diceResult, config{playerCount, victoryTarget}, winner. 턴 순환은 모듈로 연산 사용.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-7.md</path>
+        <title>Epic Technical Specification: Complete Game Flow</title>
+        <section>APIs and Interfaces - GameState API</section>
+        <snippet>GameState.new(playerCount), getCurrentPlayer(), getCurrentPlayerId(), getPlayer(id), endTurn(), nextPlayer(), getPhase(), getRound() 등 핵심 API 정의. turn.current는 1-based 인덱스.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Settlus of Catan - Game Architecture</title>
+        <section>Data Architecture - GameState 구조</section>
+        <snippet>GameState는 board, players, turn{current, phase, rolled}, config를 포함. turn.current는 1-based 플레이어 인덱스. 로직/렌더링 완전 분리 원칙.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Settlus of Catan - Epic Breakdown</title>
+        <section>Epic 7 - Story 7.1: 턴 순서 관리</section>
+        <snippet>FR17 커버. 플레이어 턴 순서 관리로 공정한 게임 진행. AC: getCurrentPlayer, endTurn 순환, 플레이어4→1 wrap-around. Prerequisites: Story 4.1.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/game/player.lua</path>
+        <kind>module</kind>
+        <symbol>Player</symbol>
+        <lines>1-111</lines>
+        <reason>GameState가 players 배열에 Player 객체들을 저장. Player.new(id) 생성자 사용. 의존성 모듈.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/board.lua</path>
+        <kind>module</kind>
+        <symbol>Board</symbol>
+        <lines>1-500</lines>
+        <reason>GameState.board 필드에 Board 객체 저장. Board.newStandard() 생성자. Story 7-2에서 연결 예정이나 구조 참조 필요.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/dice.lua</path>
+        <kind>module</kind>
+        <symbol>Dice</symbol>
+        <lines>1-27</lines>
+        <reason>GameState.rollDice()에서 Dice.roll() 호출. Story 7-2 페이즈 관리에서 사용되나 구조 이해 필요.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/rules.lua</path>
+        <kind>module</kind>
+        <symbol>Rules</symbol>
+        <lines>49-66</lines>
+        <reason>Rules.checkVictory(players, victoryTarget) 함수. GameState:checkVictory()에서 위임 호출. 승리 체크 연동.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/constants.lua</path>
+        <kind>module</kind>
+        <symbol>Constants</symbol>
+        <reason>RESOURCE_TYPES, BUILD_COSTS, BUILDING_POINTS 등 상수. Player 모듈 의존.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/classic.lua</path>
+        <kind>library</kind>
+        <symbol>Class</symbol>
+        <reason>클래스 시스템. GameState는 Class:extend()로 정의. local GameState = Class:extend() 패턴.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="busted" version="latest">테스트 프레임워크</package>
+        <package name="love2d" version="11.5+">게임 엔진 (UI 모듈용, 게임 로직은 의존 없음)</package>
+      </lua>
+      <internal>
+        <module name="lib/classic.lua">클래스 시스템</module>
+        <module name="src/game/player.lua">Player 클래스</module>
+        <module name="src/game/board.lua">Board 클래스 (Story 7-2 연결용)</module>
+        <module name="src/game/dice.lua">Dice 모듈 (Story 7-2 연결용)</module>
+        <module name="src/game/rules.lua">Rules.checkVictory (승리 체크)</module>
+      </internal>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">src/game/ 디렉토리의 모듈은 Love2D 의존성 없이 순수 Lua로 구현</constraint>
+    <constraint type="architecture">로직/렌더링 완전 분리 - busted로 독립 테스트 가능해야 함</constraint>
+    <constraint type="pattern">클래스는 classic 라이브러리 사용: local GameState = Class:extend()</constraint>
+    <constraint type="naming">파일명: snake_case (game_state.lua), 모듈/클래스: PascalCase (GameState)</constraint>
+    <constraint type="naming">함수: camelCase (getCurrentPlayer), 상수: UPPER_SNAKE</constraint>
+    <constraint type="index">Lua 배열은 1-based 인덱스 사용 (turn.current = 1)</constraint>
+    <constraint type="tdd">TDD First - 테스트 먼저 작성 후 구현</constraint>
+    <constraint type="scope">이 스토리는 턴 순서만 구현 - 페이즈(roll/main)는 Story 7-2에서 구현</constraint>
+    <constraint type="scope">mode 필드 추가하되 이 스토리에서는 "playing"만 사용</constraint>
+    <constraint type="scope">setup 구조체는 정의만 하고 로직은 Story 7-2에서 구현</constraint>
+    <constraint type="scope">turn.phase 초기값 설정은 Story 7-2에서 구현 - 이 스토리에서는 nil 또는 미사용</constraint>
+    <constraint type="input">playerCount는 Story 7-3 메인 메뉴에서 UI(2/3/4 버튼)로 제한되므로 별도 검증 불필요</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GameState.new(playerCount)</name>
+      <kind>constructor</kind>
+      <signature>function GameState.new(playerCount: number) -> GameState</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>GameState:getCurrentPlayer()</name>
+      <kind>method</kind>
+      <signature>function GameState:getCurrentPlayer() -> Player</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>GameState:getCurrentPlayerId()</name>
+      <kind>method</kind>
+      <signature>function GameState:getCurrentPlayerId() -> number</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>GameState:getPlayer(id)</name>
+      <kind>method</kind>
+      <signature>function GameState:getPlayer(id: number) -> Player|nil</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>GameState:endTurn()</name>
+      <kind>method</kind>
+      <signature>function GameState:endTurn() -> void</signature>
+      <path>src/game/game_state.lua</path>
+      <note>내부적으로 nextPlayer() 호출. 플레이어1로 복귀 시 라운드 증가. 턴 종료의 공개 API.</note>
+    </interface>
+    <interface>
+      <name>GameState:nextPlayer()</name>
+      <kind>method</kind>
+      <signature>function GameState:nextPlayer() -> void</signature>
+      <path>src/game/game_state.lua</path>
+      <note>모듈로 연산으로 다음 플레이어 계산. endTurn()에서 호출되는 내부 헬퍼. 직접 호출 비권장.</note>
+    </interface>
+    <interface>
+      <name>GameState:getRound()</name>
+      <kind>method</kind>
+      <signature>function GameState:getRound() -> number</signature>
+      <path>src/game/game_state.lua</path>
+    </interface>
+    <interface>
+      <name>Player.new(id)</name>
+      <kind>constructor</kind>
+      <signature>function Player.new(id: number) -> Player</signature>
+      <path>src/game/player.lua</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      busted 프레임워크 사용. BDD 스타일 describe/it 구문.
+      tests/game/ 디렉토리에 모듈명_spec.lua 파일 생성.
+      .busted 설정: lpath = "src/?.lua;src/?/init.lua;lib/?.lua".
+      Arrange-Act-Assert 패턴. before_each로 공통 setup.
+    </standards>
+    <locations>
+      <location>tests/game/game_state_spec.lua</location>
+    </locations>
+    <ideas>
+      <idea ac="7-1.1">2/3/4인 게임 생성 후 getCurrentPlayer()가 Player 객체 반환 확인</idea>
+      <idea ac="7-1.1">getCurrentPlayerId()가 1 반환 확인 (초기 상태)</idea>
+      <idea ac="7-1.1">getPlayer(id)로 특정 플레이어 조회 테스트</idea>
+      <idea ac="7-1.2">4인 게임에서 endTurn() 3번 호출 후 플레이어 순서 검증 (1→2→3→4)</idea>
+      <idea ac="7-1.2">2인/3인 게임에서 턴 순환 테스트</idea>
+      <idea ac="7-1.3">4인 게임 플레이어4에서 endTurn() 호출 시 플레이어1로 순환</idea>
+      <idea ac="7-1.3">2인 게임 플레이어2에서 endTurn() 호출 시 플레이어1로 순환</idea>
+      <idea ac="7-1.3">3인 게임 플레이어3에서 endTurn() 호출 시 플레이어1로 순환</idea>
+      <idea ac="7-1.4">4인 게임에서 4번 endTurn() 호출 후 라운드 = 2 확인</idea>
+      <idea ac="7-1.4">2인 게임에서 2번 endTurn() 호출 후 라운드 = 2 확인</idea>
+      <idea ac="7-1.4">getRound() 초기값 = 1 확인</idea>
+      <idea ac="all">config.playerCount 값 검증</idea>
+      <idea ac="all">config.victoryTarget 기본값 = 10 확인</idea>
+      <idea ac="all">players 배열 길이 = playerCount 확인</idea>
+      <idea ac="7-1.2">endTurn() 연속 8회 호출 후 라운드=3, 플레이어=1 확인 (4인 게임)</idea>
+    </ideas>
+  </tests>
+</story-context>
