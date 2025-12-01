@@ -1,0 +1,259 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>5</storyId>
+    <title>게임 플레이 통합</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/7-5-gameplay-integration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>UI 버튼으로 게임을 진행할 수 있어</iWant>
+    <soThat>마우스만으로 카탄 게임을 플레이 가능</soThat>
+    <tasks>
+      <task id="1" title="액션 버튼 패널 구현" acs="7-5.1, 7-5.2, 7-5.4, 7-5.6, 7-5.8">
+        <subtask>1.1 game.lua에 버튼 정의 테이블 추가 (buttons = {})</subtask>
+        <subtask>1.2 버튼 위치/크기 설정 (화면 우측 또는 하단)</subtask>
+        <subtask>1.3 버튼 렌더링 함수 구현 (drawActionButtons)</subtask>
+        <subtask>1.4 버튼 호버 상태 추적 (hoverButtonIndex)</subtask>
+        <subtask>1.5 비활성화 상태 렌더링 (회색 + 투명도)</subtask>
+      </task>
+      <task id="2" title="버튼 활성화 조건 로직" acs="7-5.1, 7-5.2, 7-5.4, 7-5.6, 7-5.8">
+        <subtask>2.1 isButtonEnabled(buttonId) 함수 구현</subtask>
+        <subtask>2.2 Roll Dice: phase == "roll" 체크</subtask>
+        <subtask>2.3 Settlement: phase == "main" AND 자원 충분 체크</subtask>
+        <subtask>2.4 City: phase == "main" AND 자원 충분 AND 업그레이드 가능 정착지 존재</subtask>
+        <subtask>2.5 Road: phase == "main" AND 자원 충분 체크</subtask>
+        <subtask>2.6 End Turn: phase == "main" 체크</subtask>
+      </task>
+      <task id="3" title="버튼 클릭 핸들링" acs="All">
+        <subtask>3.1 game:mousepressed()에서 버튼 영역 체크</subtask>
+        <subtask>3.2 버튼 클릭 시 해당 액션 실행 또는 선택 모드 진입</subtask>
+        <subtask>3.3 선택 모드 상태 변수 관리 (currentSelectionMode)</subtask>
+        <subtask>3.4 선택 모드 취소 처리 (ESC 키 또는 빈 영역 클릭)</subtask>
+      </task>
+      <task id="4" title="Roll Dice 연동" acs="7-5.1">
+        <subtask>4.1 Roll Dice 클릭 시 gameState:rollDice() 호출</subtask>
+        <subtask>4.2 주사위 결과 저장 (lastDiceResult)</subtask>
+        <subtask>4.3 자원 분배 결과 HUD에 표시 (선택)</subtask>
+      </task>
+      <task id="5" title="건설 액션 연동" acs="7-5.3, 7-5.5, 7-5.7">
+        <subtask>5.1 Settlement 클릭 시 Actions.buildSettlement(gameState, board, playerId, vertex)</subtask>
+        <subtask>5.2 City 클릭 시 Actions.buildCity(gameState, board, playerId, vertex)</subtask>
+        <subtask>5.3 Road 클릭 시 Actions.buildRoad(gameState, board, playerId, edge)</subtask>
+        <subtask>5.4 건설 성공 후 선택 모드 해제</subtask>
+        <subtask>5.5 건설 성공 후 승리 체크 (checkVictoryAndTransition 활용)</subtask>
+      </task>
+      <task id="6" title="End Turn 연동" acs="7-5.8">
+        <subtask>6.1 End Turn 클릭 시 gameState:endTurn() 호출</subtask>
+        <subtask>6.2 다음 플레이어 정보 HUD 업데이트</subtask>
+        <subtask>6.3 phase가 "roll"로 리셋됨 확인</subtask>
+      </task>
+      <task id="7" title="기존 선택 시스템 연동" acs="7-5.2, 7-5.3, 7-5.4, 7-5.5, 7-5.6, 7-5.7">
+        <subtask>7.1 기존 highlightedVertices/highlightedEdges 활용</subtask>
+        <subtask>7.2 선택 모드에 따른 하이라이트 필터링</subtask>
+        <subtask>7.3 기존 mousepressed의 정점/변 선택 로직과 통합</subtask>
+        <subtask>7.4 선택 성공 시 액션 실행 트리거</subtask>
+      </task>
+      <task id="8" title="테스트 및 수동 검증" acs="All">
+        <subtask>8.1 Roll Dice 버튼 동작 확인</subtask>
+        <subtask>8.2 각 건설 버튼 → 선택 모드 → 건설 흐름 확인</subtask>
+        <subtask>8.3 End Turn 버튼 동작 확인</subtask>
+        <subtask>8.4 비활성화 상태 시각적 피드백 확인</subtask>
+        <subtask>8.5 전체 게임 플로우 테스트 (setup → playing → finished)</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="7-5.1" title="Roll Dice 버튼">
+      <check>"Roll Dice" 버튼 표시</check>
+      <check>버튼 클릭 시 gameState:rollDice() 호출</check>
+      <check>주사위 결과 HUD에 표시 (기존 HUD 활용)</check>
+      <check>roll 페이즈가 아니면 버튼 비활성화 (회색 처리)</check>
+    </criterion>
+    <criterion id="7-5.2" title="Settlement 버튼">
+      <check>"Settlement" 버튼 표시</check>
+      <check>버튼 클릭 시 settlement 선택 모드 진입</check>
+      <check>유효한 정점 하이라이트 (기존 하이라이트 시스템 활용)</check>
+      <check>자원 부족 시 버튼 비활성화</check>
+    </criterion>
+    <criterion id="7-5.3" title="Settlement 건설 실행">
+      <check>settlement 선택 모드에서 유효한 정점 클릭</check>
+      <check>Actions.buildSettlement() 실행</check>
+      <check>건물 렌더링 업데이트 (board.buildings 반영)</check>
+      <check>승리 체크 후 필요 시 game_over 전환</check>
+    </criterion>
+    <criterion id="7-5.4" title="City 버튼">
+      <check>"City" 버튼 표시</check>
+      <check>버튼 클릭 시 city 선택 모드 진입</check>
+      <check>업그레이드 가능한 정착지 하이라이트</check>
+      <check>자원 부족 시 버튼 비활성화</check>
+    </criterion>
+    <criterion id="7-5.5" title="City 건설 실행">
+      <check>city 선택 모드에서 유효한 정점 클릭 (기존 정착지)</check>
+      <check>Actions.buildCity() 실행</check>
+      <check>건물 렌더링 업데이트 (settlement → city)</check>
+      <check>승리 체크 후 필요 시 game_over 전환</check>
+    </criterion>
+    <criterion id="7-5.6" title="Road 버튼">
+      <check>"Road" 버튼 표시</check>
+      <check>버튼 클릭 시 road 선택 모드 진입</check>
+      <check>유효한 변 하이라이트 (기존 하이라이트 시스템 활용)</check>
+      <check>자원 부족 시 버튼 비활성화</check>
+    </criterion>
+    <criterion id="7-5.7" title="Road 건설 실행">
+      <check>road 선택 모드에서 유효한 변 클릭</check>
+      <check>Actions.buildRoad() 실행</check>
+      <check>건물 렌더링 업데이트 (board.roads 반영)</check>
+    </criterion>
+    <criterion id="7-5.8" title="End Turn 버튼">
+      <check>"End Turn" 버튼 표시</check>
+      <check>버튼 클릭 시 gameState:endTurn() 호출</check>
+      <check>다음 플레이어로 전환 (HUD 업데이트)</check>
+      <check>roll 페이즈가 아닌 경우에만 활성화 (main 페이즈)</check>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Project Structure">
+        src/scenes/game.lua가 게임 플레이 씬. 버튼 UI는 menu.lua, game_over.lua의 isPointInRect, drawButton 패턴 재사용.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-7.md" title="Epic 7 Tech Spec" section="AC 7-5">
+        Roll Dice, Settlement, City, Road, End Turn 버튼 스펙. 선택 모드, 하이라이트, 건설 실행, 승리 체크 흐름 정의.
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Epic 7 Story 7.5">
+        게임 플레이 통합 스토리 정의. UI 버튼으로 롤, 건설, 턴 종료 가능하게 함.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="src/scenes/game.lua" kind="scene" symbol="game" lines="1-311" reason="주 수정 대상. 버튼 UI 추가, 클릭 핸들링, 기존 선택 시스템 통합">
+        <existing>
+          <symbol name="selectionMode" type="variable" desc="현재 선택 모드 (none/settlement/city/road)"/>
+          <symbol name="validVertices" type="variable" desc="유효한 정점 목록"/>
+          <symbol name="validEdges" type="variable" desc="유효한 변 목록"/>
+          <symbol name="updateValidLocations(mode)" type="function" desc="선택 모드에 따라 유효 위치 갱신"/>
+          <symbol name="checkVictoryAndTransition()" type="function" desc="승리 체크 후 game_over 전환 (미사용, 활용 필요)"/>
+          <symbol name="game:mousepressed(x, y, button)" type="method" desc="클릭 처리 - 버튼 영역 체크 추가 필요"/>
+          <symbol name="game:draw()" type="method" desc="렌더링 - 버튼 패널 렌더링 추가 필요"/>
+        </existing>
+      </artifact>
+      <artifact path="src/scenes/menu.lua" kind="scene" symbol="menu" lines="39-70" reason="버튼 패턴 참조: isPointInRect, drawButton 함수 재사용 가능"/>
+      <artifact path="src/scenes/game_over.lua" kind="scene" symbol="game_over" lines="1-150" reason="버튼 패턴 참조: 비활성화 버튼 스타일 참조"/>
+      <artifact path="src/game/game_state.lua" kind="module" symbol="GameState" lines="1-150" reason="상태 관리 API">
+        <api name="GameState:rollDice()" returns="{die1, die2, sum}|nil" desc="주사위 굴림, phase를 main으로 변경"/>
+        <api name="GameState:endTurn()" returns="void" desc="턴 종료, 다음 플레이어, phase를 roll로 변경"/>
+        <api name="GameState:getPhase()" returns="string" desc="현재 페이즈 (roll/main)"/>
+        <api name="GameState:canRoll()" returns="boolean" desc="roll 가능 여부"/>
+        <api name="GameState:canBuild()" returns="boolean" desc="건설 가능 여부 (mode=playing, phase=main)"/>
+        <api name="GameState:getCurrentPlayerId()" returns="number" desc="현재 플레이어 ID"/>
+        <api name="GameState:checkVictory()" returns="number|nil" desc="승자 ID 또는 nil"/>
+      </artifact>
+      <artifact path="src/game/actions.lua" kind="module" symbol="Actions" lines="1-170" reason="건설 액션 API">
+        <api name="Actions.buildSettlement(game, playerId, vertex)" returns="boolean, string?" desc="정착지 건설, 자원 차감 포함"/>
+        <api name="Actions.buildCity(game, playerId, vertex)" returns="boolean, string?" desc="도시 업그레이드, 자원 차감 포함"/>
+        <api name="Actions.buildRoad(game, playerId, edge)" returns="boolean, string?" desc="도로 건설, 자원 차감 포함"/>
+      </artifact>
+      <artifact path="src/game/rules.lua" kind="module" symbol="Rules" lines="77-278" reason="건설 검증 및 유효 위치 API">
+        <api name="Rules.getValidSettlementLocations(board, playerId, isInitialPlacement)" returns="table" desc="건설 가능한 정점 목록"/>
+        <api name="Rules.getValidRoadLocations(board, playerId)" returns="table" desc="건설 가능한 변 목록"/>
+        <api name="Rules.canBuildSettlement(board, playerId, vertex, isInitialPlacement)" returns="boolean, string?" desc="정착지 건설 가능 여부"/>
+        <api name="Rules.canBuildCity(board, playerId, vertex)" returns="boolean, string?" desc="도시 업그레이드 가능 여부"/>
+        <api name="Rules.canBuildRoad(board, playerId, edge)" returns="boolean, string?" desc="도로 건설 가능 여부"/>
+      </artifact>
+      <artifact path="src/game/player.lua" kind="module" symbol="Player" lines="1-100" reason="자원 확인 API">
+        <api name="Player:hasResources(cost)" returns="boolean" desc="비용 충족 여부 확인"/>
+        <api name="Player:getVictoryPoints()" returns="number" desc="현재 승리 점수"/>
+      </artifact>
+      <artifact path="src/game/constants.lua" kind="module" symbol="Constants" lines="1-50" reason="건물 비용 상수">
+        <constant name="BUILD_COSTS.settlement" value="{wood=1, brick=1, sheep=1, wheat=1}"/>
+        <constant name="BUILD_COSTS.city" value="{wheat=2, ore=3}"/>
+        <constant name="BUILD_COSTS.road" value="{wood=1, brick=1}"/>
+      </artifact>
+      <artifact path="src/ui/input.lua" kind="module" symbol="Input" lines="1-200" reason="픽셀→좌표 변환">
+        <api name="Input.pixelToVertex(x, y, hexSize, offsetX, offsetY, threshold)" returns="vertex|nil"/>
+        <api name="Input.pixelToEdge(x, y, hexSize, offsetX, offsetY, threshold)" returns="edge|nil"/>
+      </artifact>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="Love2D" version="11.5+" purpose="게임 엔진"/>
+        <package name="hump.gamestate" version="latest" purpose="씬 관리"/>
+        <package name="classic" version="latest" purpose="클래스 시스템"/>
+        <package name="busted" version="latest" purpose="테스트 프레임워크"/>
+      </lua>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture" type="pattern">모든 게임 로직은 src/game/에, UI는 src/ui/ 또는 src/scenes/에 위치</constraint>
+    <constraint source="architecture" type="naming">함수는 camelCase, 상수는 UPPER_SNAKE_CASE</constraint>
+    <constraint source="dev-notes" type="integration">기존 selectionMode, validVertices, validEdges 변수 활용</constraint>
+    <constraint source="dev-notes" type="integration">checkVictoryAndTransition() 함수를 건설 성공 후 호출하여 활용</constraint>
+    <constraint source="tech-spec" type="ui">버튼 비활성화 시 회색 + 투명도 처리</constraint>
+    <constraint source="story-7-4" type="pattern">isPointInRect(), drawButton() 패턴은 menu.lua, game_over.lua에서 확립됨</constraint>
+    <constraint source="architecture" type="testing">UI 씬은 수동 테스트, 게임 로직은 busted 단위 테스트</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="GameState:rollDice" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:rollDice() -> {die1, die2, sum}|nil, string?</signature>
+      <desc>주사위 굴림. phase가 roll이 아니면 nil 반환. 성공 시 phase를 main으로 변경하고 자원 분배 실행.</desc>
+    </interface>
+    <interface name="GameState:endTurn" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:endTurn() -> void</signature>
+      <desc>턴 종료. 다음 플레이어로 전환, phase를 roll로 리셋, diceResult를 nil로 초기화.</desc>
+    </interface>
+    <interface name="Actions.buildSettlement" kind="function" path="src/game/actions.lua">
+      <signature>function Actions.buildSettlement(game, playerId, vertex) -> boolean, string?</signature>
+      <desc>정착지 건설. game은 GameState 객체. 자원 확인→규칙 검증→자원 차감→보드 배치→건물 카운트 증가.</desc>
+    </interface>
+    <interface name="Actions.buildCity" kind="function" path="src/game/actions.lua">
+      <signature>function Actions.buildCity(game, playerId, vertex) -> boolean, string?</signature>
+      <desc>도시 업그레이드. 기존 정착지를 도시로 변환. 자원 확인→규칙 검증→자원 차감→보드 업그레이드→건물 카운트 조정.</desc>
+    </interface>
+    <interface name="Actions.buildRoad" kind="function" path="src/game/actions.lua">
+      <signature>function Actions.buildRoad(game, playerId, edge) -> boolean, string?</signature>
+      <desc>도로 건설. 자원 확인→규칙 검증→자원 차감→보드 배치→도로 카운트 증가.</desc>
+    </interface>
+    <interface name="checkVictoryAndTransition" kind="function" path="src/scenes/game.lua">
+      <signature>function checkVictoryAndTransition() -> void</signature>
+      <desc>승리 체크 후 game_over 씬으로 전환. Story 7-4에서 정의되었으나 미사용 상태. 건설 성공 후 호출 필요.</desc>
+    </interface>
+    <interface name="updateValidLocations" kind="function" path="src/scenes/game.lua">
+      <signature>function updateValidLocations(mode) -> void</signature>
+      <desc>선택 모드에 따라 validVertices, validEdges 갱신. mode가 settlement/city/road일 때 해당 유효 위치 계산.</desc>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      busted 프레임워크 사용. BDD 스타일 describe/it 구조. tests/game/ 디렉토리에 *_spec.lua 파일.
+      src/game/ 모듈은 단위 테스트 필수. src/scenes/ UI 씬은 수동 테스트.
+      .busted 설정: lpath = "src/?.lua;src/?/init.lua;lib/?.lua", ROOT = {"tests/"}.
+    </standards>
+    <locations>
+      <loc>tests/game/*_spec.lua</loc>
+      <loc>tests/ui/*_spec.lua</loc>
+    </locations>
+    <ideas>
+      <idea ac="7-5.1">수동: Roll Dice 버튼 클릭 시 주사위 결과 HUD 표시 확인</idea>
+      <idea ac="7-5.1">수동: roll 페이즈가 아닐 때 Roll Dice 버튼 비활성화 확인</idea>
+      <idea ac="7-5.2">수동: Settlement 버튼 클릭 시 유효 정점 하이라이트 확인</idea>
+      <idea ac="7-5.2">수동: 자원 부족 시 Settlement 버튼 비활성화 확인</idea>
+      <idea ac="7-5.3">수동: 정점 클릭 후 정착지 건설 및 렌더링 확인</idea>
+      <idea ac="7-5.3">수동: 10점 도달 시 game_over 씬 전환 확인</idea>
+      <idea ac="7-5.4">수동: City 버튼 클릭 시 기존 정착지 하이라이트 확인</idea>
+      <idea ac="7-5.5">수동: 정착지 클릭 후 도시 업그레이드 확인</idea>
+      <idea ac="7-5.6">수동: Road 버튼 클릭 시 유효 변 하이라이트 확인</idea>
+      <idea ac="7-5.7">수동: 변 클릭 후 도로 건설 및 렌더링 확인</idea>
+      <idea ac="7-5.8">수동: End Turn 버튼 클릭 시 다음 플레이어 전환 확인</idea>
+      <idea ac="7-5.8">수동: roll 페이즈에서 End Turn 버튼 비활성화 확인</idea>
+      <idea ac="All">수동: 전체 게임 플로우 (New Game → Roll → Build → End Turn → ... → Victory)</idea>
+    </ideas>
+  </tests>
+</story-context>

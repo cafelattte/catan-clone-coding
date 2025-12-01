@@ -1125,6 +1125,66 @@ Then 게임 종료
 
 ---
 
+### Story 7.5: 게임 플레이 통합
+
+**As a** 플레이어,
+**I want** UI 버튼으로 게임을 진행할 수 있어,
+**So that** 마우스만으로 카탄 게임을 플레이 가능.
+
+**Acceptance Criteria:**
+
+```
+Given game.lua 게임 씬
+When "Roll Dice" 버튼 클릭
+Then gameState:rollDice() 호출
+And 주사위 결과 HUD에 표시
+And roll 페이즈가 아니면 버튼 비활성화
+
+Given game.lua 게임 씬
+When "Settlement" 버튼 클릭
+Then settlement 선택 모드 진입
+And 유효한 정점 하이라이트
+
+Given settlement 선택 모드
+When 유효한 정점 클릭
+Then Actions.buildSettlement() 실행
+And 건물 렌더링 업데이트
+And 승리 체크
+
+Given game.lua 게임 씬
+When "City" 버튼 클릭
+Then city 선택 모드 진입
+And 업그레이드 가능한 정착지 하이라이트
+
+Given city 선택 모드
+When 유효한 정점 클릭 (기존 정착지)
+Then Actions.buildCity() 실행
+And 건물 렌더링 업데이트
+And 승리 체크
+
+Given game.lua 게임 씬
+When "Road" 버튼 클릭
+Then road 선택 모드 진입
+And 유효한 변 하이라이트
+
+Given road 선택 모드
+When 유효한 변 클릭
+Then Actions.buildRoad() 실행
+And 건물 렌더링 업데이트
+
+Given main 페이즈
+When "End Turn" 버튼 클릭
+Then gameState:endTurn() 호출
+And 다음 플레이어로 전환
+And roll 페이즈가 아니면 버튼 비활성화
+```
+
+**Prerequisites:** Story 7.2, Story 7.3, Story 7.4
+
+**Technical Notes:** game.lua에 액션 버튼 패널 추가, 버튼 상태는 GameState 페이즈/자원에 따라 동적 변경
+
+---
+
 ## FR Coverage Matrix (최종 검증)
 
 | FR | Epic | Stories | 상태 |
