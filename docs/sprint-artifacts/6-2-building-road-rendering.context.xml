@@ -1,0 +1,296 @@
+<story-context id="6-2-building-road-rendering" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>2</storyId>
+    <title>건물/도로 렌더링</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/6-2-building-road-rendering.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>건물(정착지, 도시)과 도로가 보드 위에 표시되어</iWant>
+    <soThat>각 플레이어의 영역과 건설 상태를 시각적으로 확인 가능</soThat>
+    <tasks>
+      <task id="1" title="정점 픽셀 좌표 계산 함수">
+        <subtask id="1.1">getVertexPixel(q, r, dir, hexSize, offsetX, offsetY) 함수 구현</subtask>
+        <subtask id="1.2">정점 방향(N, S)에 따른 픽셀 위치 계산</subtask>
+        <subtask id="1.3">hex.axialToCube, hex.cubeToPixel 활용</subtask>
+      </task>
+      <task id="2" title="변 픽셀 좌표 계산 함수">
+        <subtask id="2.1">getEdgePixels(q, r, dir, hexSize, offsetX, offsetY) 함수 구현</subtask>
+        <subtask id="2.2">변 방향(NE, E, SE)에 따른 양 끝점 픽셀 좌표 계산</subtask>
+        <subtask id="2.3">변의 두 정점 좌표 활용</subtask>
+      </task>
+      <task id="3" title="정착지 렌더링 함수">
+        <subtask id="3.1">drawSettlement(px, py, playerId, size) 함수 구현</subtask>
+        <subtask id="3.2">삼각형 폴리곤 그리기 (love.graphics.polygon)</subtask>
+        <subtask id="3.3">Colors.PLAYER[playerId] 색상 적용</subtask>
+        <subtask id="3.4">외곽선(검정) 추가로 가시성 향상</subtask>
+      </task>
+      <task id="4" title="도시 렌더링 함수">
+        <subtask id="4.1">drawCity(px, py, playerId, size) 함수 구현</subtask>
+        <subtask id="4.2">사각형 그리기 (love.graphics.rectangle)</subtask>
+        <subtask id="4.3">정착지보다 1.5배 크기</subtask>
+        <subtask id="4.4">Colors.PLAYER[playerId] 색상 적용</subtask>
+        <subtask id="4.5">외곽선(검정) 추가</subtask>
+      </task>
+      <task id="5" title="도로 렌더링 함수">
+        <subtask id="5.1">drawRoad(px1, py1, px2, py2, playerId, width) 함수 구현</subtask>
+        <subtask id="5.2">두 정점 사이 선 그리기 (love.graphics.line)</subtask>
+        <subtask id="5.3">Colors.PLAYER[playerId] 색상 적용</subtask>
+        <subtask id="5.4">선 두께 설정 (기본 4px)</subtask>
+      </task>
+      <task id="6" title="전체 건물/도로 렌더링 통합">
+        <subtask id="6.1">BoardView.drawBuildings(buildings, hexSize, offsetX, offsetY) 함수 구현</subtask>
+        <subtask id="6.2">도로 먼저 렌더링 (roads 순회)</subtask>
+        <subtask id="6.3">정착지 렌더링 (settlements 순회)</subtask>
+        <subtask id="6.4">도시 렌더링 (cities 순회)</subtask>
+        <subtask id="6.5">BoardView.draw()에서 drawBuildings() 호출 통합</subtask>
+      </task>
+      <task id="7" title="테스트 데이터 및 검증">
+        <subtask id="7.1">main.lua에서 테스트용 buildings 데이터 구조 생성</subtask>
+        <subtask id="7.2">love.load()에서 testBuildings 초기화</subtask>
+        <subtask id="7.3">BoardView.draw()에 buildings 파라미터 전달</subtask>
+        <subtask id="7.4">love . 실행하여 4개 플레이어 색상 구분 확인</subtask>
+        <subtask id="7.5">정착지(삼각형)/도시(사각형)/도로(선) 각각 렌더링 확인</subtask>
+        <subtask id="7.6">렌더링 순서 확인 (도로가 건물 아래에 위치)</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC6-2-1">BoardView.drawBuildings(buildings, hexSize, offsetX, offsetY) 호출 시 모든 건물이 렌더링됨</criterion>
+    <criterion id="AC6-2-2">정착지는 삼각형(▲) 형태로 정점 위치에 표시됨</criterion>
+    <criterion id="AC6-2-3">도시는 사각형(■) 형태로 정점 위치에 표시됨 (정착지보다 크게)</criterion>
+    <criterion id="AC6-2-4">도로는 변을 따라 선(line)으로 표시됨</criterion>
+    <criterion id="AC6-2-5">각 건물/도로는 소유 플레이어의 색상으로 표시됨:
+      - Player 1 = 빨강 (0.9, 0.2, 0.2)
+      - Player 2 = 파랑 (0.2, 0.4, 0.9)
+      - Player 3 = 초록 (0.2, 0.8, 0.2)
+      - Player 4 = 노랑 (0.9, 0.8, 0.2)</criterion>
+    <criterion id="AC6-2-6">렌더링 순서: 도로 → 정착지 → 도시 (도로가 건물 아래에 표시)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Settlus of Catan - Game Architecture</title>
+        <section>Data Architecture - GameState 구조</section>
+        <snippet>buildings 구조: settlements["0,1,N"] = {player = 1}, cities = {}, roads["0,0,E"] = {player = 1}. Map 구조로 O(1) 조회, 중복 방지.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Settlus of Catan - Game Architecture</title>
+        <section>Core Architecture Principles - 로직/렌더링 분리</section>
+        <snippet>src/game/은 Love2D 의존성 없이 순수 Lua로 구현. src/ui/는 Love2D 의존 - 렌더링만 담당. 단방향 의존.</snippet>
+      </doc>
+      <doc>
+        <path>docs/game-architecture.md</path>
+        <title>Settlus of Catan - Game Architecture</title>
+        <section>Coordinate System Architecture</section>
+        <snippet>정점: {q, r, dir="N"/"S"}. 변: {q, r, dir="NE"/"E"/"SE"}. 정규화된 좌표 문자열을 Map 키로 사용.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic Technical Specification: Visual Experience</title>
+        <section>AC-6.2: 건물/도로 렌더링</section>
+        <snippet>정착지=삼각형, 도시=사각형, 도로=선. 플레이어 색상: 1=빨강, 2=파랑, 3=초록, 4=노랑.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-6.md</path>
+        <title>Epic Technical Specification: Visual Experience</title>
+        <section>Detailed Design - board_view.lua Interface</section>
+        <snippet>BoardView.drawSettlement(px, py, playerId, size), BoardView.drawCity(px, py, playerId, size), BoardView.drawRoad(px1, py1, px2, py2, playerId, width).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/6-1-hex-board-rendering.md</path>
+        <title>Story 6.1: 헥스 보드 렌더링</title>
+        <section>Dev Agent Record - Learnings</section>
+        <snippet>Colors.PLAYER 정의됨 (4명 색상). love.graphics 패턴: setColor() → polygon("fill") → polygon("line"). BoardView.draw() 호출 패턴.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/ui/board_view.lua</path>
+        <kind>module</kind>
+        <symbol>BoardView</symbol>
+        <lines>1-117</lines>
+        <reason>건물/도로 렌더링 함수 추가할 대상 파일. 기존 drawHexagon, drawNumberToken 패턴 재사용.</reason>
+      </artifact>
+      <artifact>
+        <path>src/ui/board_view.lua</path>
+        <kind>function</kind>
+        <symbol>getHexCorners</symbol>
+        <lines>16-24</lines>
+        <reason>Pointy-top 정점 계산 패턴 - 삼각형 정점 계산에 참고.</reason>
+      </artifact>
+      <artifact>
+        <path>src/ui/board_view.lua</path>
+        <kind>function</kind>
+        <symbol>drawHexagon</symbol>
+        <lines>33-43</lines>
+        <reason>fill + outline 렌더링 패턴 - 정착지/도시 렌더링에 재사용.</reason>
+      </artifact>
+      <artifact>
+        <path>src/ui/board_view.lua</path>
+        <kind>function</kind>
+        <symbol>BoardView.draw</symbol>
+        <lines>89-114</lines>
+        <reason>보드 렌더링 메인 함수 - drawBuildings 호출 통합 위치.</reason>
+      </artifact>
+      <artifact>
+        <path>src/ui/colors.lua</path>
+        <kind>module</kind>
+        <symbol>Colors</symbol>
+        <lines>1-39</lines>
+        <reason>Colors.PLAYER 색상 팔레트 정의됨. 건물/도로 렌더링에 사용.</reason>
+      </artifact>
+      <artifact>
+        <path>src/ui/colors.lua</path>
+        <kind>constant</kind>
+        <symbol>Colors.PLAYER</symbol>
+        <lines>17-22</lines>
+        <reason>플레이어별 색상 정의: [1]=빨강, [2]=파랑, [3]=초록, [4]=노랑.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/hex.lua</path>
+        <kind>function</kind>
+        <symbol>Hex.axialToCube</symbol>
+        <lines>33-38</lines>
+        <reason>Axial → Cube 변환 - 정점 픽셀 좌표 계산에 필요.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/hex.lua</path>
+        <kind>function</kind>
+        <symbol>Hex.cubeToPixel</symbol>
+        <lines>87-93</lines>
+        <reason>Cube → Pixel 변환 - 헥스 중심 픽셀 좌표 계산에 필요.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/vertex.lua</path>
+        <kind>module</kind>
+        <symbol>Vertex</symbol>
+        <lines>1-126</lines>
+        <reason>정점 정규화 및 인접 관계. getVertexPixel에서 Vertex.normalize 활용.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/edge.lua</path>
+        <kind>module</kind>
+        <symbol>Edge</symbol>
+        <lines>1-131</lines>
+        <reason>변 정규화 및 양 끝 정점 조회. Edge.getVertices로 도로 양 끝점 계산.</reason>
+      </artifact>
+      <artifact>
+        <path>src/game/edge.lua</path>
+        <kind>function</kind>
+        <symbol>Edge.getVertices</symbol>
+        <lines>67-88</lines>
+        <reason>변의 양 끝 정점 조회 - 도로 픽셀 좌표 계산에 필수.</reason>
+      </artifact>
+      <artifact>
+        <path>main.lua</path>
+        <kind>file</kind>
+        <symbol>main</symbol>
+        <lines>1-36</lines>
+        <reason>테스트용 buildings 데이터 추가 및 BoardView.draw 호출 수정 위치.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="love2d" version="11.5+">Love2D 게임 엔진 - love.graphics.polygon, love.graphics.line, love.graphics.rectangle, love.graphics.setColor, love.graphics.setLineWidth</package>
+      </lua>
+      <internal>
+        <module name="src.game.hex">axialToCube, cubeToPixel - 좌표 변환</module>
+        <module name="src.game.vertex">normalize - 정점 정규화 (선택적)</module>
+        <module name="src.game.edge">getVertices - 변의 양 끝 정점 조회</module>
+        <module name="src.ui.colors">Colors.PLAYER - 플레이어 색상</module>
+      </internal>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/ui/는 Love2D 의존 가능, src/game/은 Love2D 의존 없음 유지</constraint>
+    <constraint source="Architecture">단방향 의존: src/ui/ → src/game/</constraint>
+    <constraint source="Dev Notes">정점 방향은 N, S만 사용</constraint>
+    <constraint source="Dev Notes">변 방향은 NE, E, SE만 사용 (정규화 후)</constraint>
+    <constraint source="Story AC6-2-6">렌더링 순서: 도로 → 정착지 → 도시 (z-order)</constraint>
+    <constraint source="Naming Convention">파일명: snake_case, 모듈: PascalCase, 함수: camelCase</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>BoardView.drawBuildings</name>
+      <kind>function</kind>
+      <signature>function BoardView.drawBuildings(buildings, hexSize, offsetX, offsetY)</signature>
+      <path>src/ui/board_view.lua</path>
+    </interface>
+    <interface>
+      <name>Buildings Data Structure</name>
+      <kind>data structure</kind>
+      <signature>buildings = { settlements = { ["q,r,dir"] = {player = id} }, cities = { ["q,r,dir"] = {player = id} }, roads = { ["q,r,dir"] = {player = id} } }</signature>
+      <path>docs/game-architecture.md</path>
+    </interface>
+    <interface>
+      <name>Colors.PLAYER</name>
+      <kind>constant table</kind>
+      <signature>Colors.PLAYER[playerId] → {r, g, b} (0-1 범위)</signature>
+      <path>src/ui/colors.lua</path>
+    </interface>
+    <interface>
+      <name>Hex.axialToCube</name>
+      <kind>function</kind>
+      <signature>function Hex.axialToCube(q, r) → x, y, z</signature>
+      <path>src/game/hex.lua</path>
+    </interface>
+    <interface>
+      <name>Hex.cubeToPixel</name>
+      <kind>function</kind>
+      <signature>function Hex.cubeToPixel(x, y, z, size) → px, py</signature>
+      <path>src/game/hex.lua</path>
+    </interface>
+    <interface>
+      <name>Edge.getVertices</name>
+      <kind>function</kind>
+      <signature>function Edge.getVertices(q, r, dir) → v1, v2 ({q, r, dir})</signature>
+      <path>src/game/edge.lua</path>
+    </interface>
+    <interface>
+      <name>love.graphics.polygon</name>
+      <kind>Love2D API</kind>
+      <signature>love.graphics.polygon(mode, vertices...) -- mode: "fill" or "line"</signature>
+      <path>Love2D</path>
+    </interface>
+    <interface>
+      <name>love.graphics.line</name>
+      <kind>Love2D API</kind>
+      <signature>love.graphics.line(x1, y1, x2, y2)</signature>
+      <path>Love2D</path>
+    </interface>
+    <interface>
+      <name>love.graphics.setLineWidth</name>
+      <kind>Love2D API</kind>
+      <signature>love.graphics.setLineWidth(width)</signature>
+      <path>Love2D</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>UI 모듈은 Love2D 의존성으로 인해 busted 자동 테스트가 불가능합니다. 시각적 테스트(수동)로 검증하며, main.lua에서 테스트용 buildings 데이터를 생성하여 love . 실행으로 확인합니다. 디버그 모드에서 정점/변 좌표 텍스트 표시 옵션을 추가할 수 있습니다.</standards>
+    <locations>
+      <location>tests/ui/ (향후 mock 기반 테스트)</location>
+      <location>main.lua (시각적 테스트용 데이터)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC6-2-1">love . 실행 후 testBuildings의 모든 건물이 화면에 표시되는지 확인</idea>
+      <idea ac="AC6-2-2">정착지가 삼각형 형태로 정점 위치에 정확히 표시되는지 확인</idea>
+      <idea ac="AC6-2-3">도시가 사각형 형태로 표시되며 정착지보다 크게 보이는지 확인</idea>
+      <idea ac="AC6-2-4">도로가 두 정점 사이를 연결하는 선으로 표시되는지 확인</idea>
+      <idea ac="AC6-2-5">4명 플레이어의 건물/도로가 각각 빨강, 파랑, 초록, 노랑으로 구분되는지 확인</idea>
+      <idea ac="AC6-2-6">도로가 건물 아래에 렌더링되어 건물이 도로 위에 보이는지 확인</idea>
+    </ideas>
+  </tests>
+</story-context>

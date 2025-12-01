@@ -74,10 +74,9 @@ function Edge.getVertices(q, r, dir)
     v1 = {q = nq, r = nr, dir = "N"}
     v2 = {q = nq + 1, r = nr - 1, dir = "S"}
   elseif ndir == "E" then
-    -- E 변: 헥스의 오른쪽 위(N)와 오른쪽 아래(S) 사이가 아님
-    -- E 변은 NE 이웃의 S와 SE 이웃의 N을 연결
+    -- E 변: NE 이웃의 S 정점과 SE 이웃의 N 정점을 연결
     v1 = {q = nq + 1, r = nr - 1, dir = "S"}
-    v2 = {q = nq, r = nr, dir = "S"}
+    v2 = {q = nq, r = nr + 1, dir = "N"}
   elseif ndir == "SE" then
     -- SE 변: 헥스의 S 정점과 SE 이웃의 N 정점
     v1 = {q = nq, r = nr, dir = "S"}
