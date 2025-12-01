@@ -3,6 +3,7 @@
 -- hump.gamestate 호환 씬 구조
 -- 기존 main.lua 렌더링 로직을 씬으로 이동
 
+local Gamestate = require("lib.hump.gamestate")
 local Board = require("src.game.board")
 local BoardView = require("src.ui.board_view")
 local HUD = require("src.ui.hud")
@@ -153,8 +154,29 @@ function game:leave()
   buildings = nil
 end
 
+---
+-- 승리 체크 및 게임 종료 씬 전환
+-- 건설 완료 직후 호출됨
+---
+local function checkVictoryAndTransition()
+  if not gameState then return end
+
+  local winnerId = gameState:checkVictory()
+  if winnerId then
+    -- 게임 종료 씬으로 전환
+    local game_over = require("src.scenes.game_over")
+    Gamestate.switch(game_over, winnerId, gameState.players)
+  end
+end
+
 function game:update(dt) -- luacheck: ignore dt
-  -- 게임 로직 업데이트 (나중에 구현)
+  if not gameState then return end
+
+  -- 게임 모드가 finished면 즉시 전환
+  if gameState.mode == "finished" and gameState.winner then
+    local game_over = require("src.scenes.game_over")
+    Gamestate.switch(game_over, gameState.winner, gameState.players)
+  end
 end
 
 function game:draw()
