@@ -82,7 +82,7 @@ development_status:
   epic-6: contexted
   6-1-hex-board-rendering: done
   6-2-building-road-rendering: done
-  6-3-hud-display: backlog
+  6-3-hud-display: done
   6-4-mouse-to-hex: backlog
   6-5-vertex-edge-selection: backlog
   epic-6-retrospective: optional

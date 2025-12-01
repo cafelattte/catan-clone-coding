@@ -1,0 +1,130 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>3</storyId>
+    <title>HUD Display</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/6-3-hud-display.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>현재 자원, 승리 점수, 턴 정보, 주사위 결과가 화면에 표시되어</iWant>
+    <soThat>게임 상태를 한눈에 파악하고 전략적 결정을 내릴 수 있음</soThat>
+    <tasks>
+      <task n="1" desc="HUD 모듈 기본 구조 생성" ac="1">
+        <subtask>src/ui/hud.lua 파일 생성</subtask>
+        <subtask>HUD 테이블 및 기본 draw 함수 구조 정의</subtask>
+        <subtask>love.graphics 필수 함수 사용 준비 (setColor, print, rectangle)</subtask>
+      </task>
+      <task n="2" desc="자원 패널 구현" ac="2">
+        <subtask>HUD.drawResourcePanel(player, x, y, width, height) 함수 구현</subtask>
+        <subtask>5종 자원 아이콘/텍스트 + 수량 표시 (가로 배열)</subtask>
+        <subtask>자원별 구분 색상 적용</subtask>
+        <subtask>화면 하단 중앙에 배치</subtask>
+      </task>
+      <task n="3" desc="점수 패널 구현" ac="3">
+        <subtask>HUD.drawScorePanel(players, x, y) 함수 구현</subtask>
+        <subtask>모든 플레이어의 점수 목록 표시</subtask>
+        <subtask>각 플레이어 색상으로 구분</subtask>
+        <subtask>현재 턴 플레이어 강조 표시</subtask>
+        <subtask>화면 우측 상단에 배치</subtask>
+      </task>
+      <task n="4" desc="턴 정보 패널 구현" ac="4">
+        <subtask>HUD.drawTurnInfo(currentPlayer, phase, x, y) 함수 구현</subtask>
+        <subtask>"Player N의 턴" 형식으로 표시</subtask>
+        <subtask>현재 페이즈 표시 (roll/build/trade)</subtask>
+        <subtask>플레이어 색상으로 배경 또는 텍스트 강조</subtask>
+        <subtask>화면 상단 중앙에 배치</subtask>
+      </task>
+      <task n="5" desc="주사위 결과 표시 구현" ac="5">
+        <subtask>HUD.drawDiceResult(die1, die2, x, y) 함수 구현</subtask>
+        <subtask>두 주사위 값 개별 표시 ([3] + [4] = 7)</subtask>
+        <subtask>합계 강조 표시</subtask>
+        <subtask>7인 경우 특별 색상</subtask>
+        <subtask>화면 좌측 상단에 배치</subtask>
+      </task>
+      <task n="6" desc="전체 HUD 통합" ac="1,6">
+        <subtask>HUD.draw(gameState, screenWidth, screenHeight) 함수 구현</subtask>
+        <subtask>각 패널 함수를 적절한 위치에서 호출</subtask>
+        <subtask>gameState에서 필요한 데이터 추출</subtask>
+        <subtask>nil 체크로 안전한 렌더링</subtask>
+      </task>
+      <task n="7" desc="main.lua 통합 및 테스트" ac="1-6">
+        <subtask>main.lua에서 HUD 모듈 require</subtask>
+        <subtask>love.draw()에서 BoardView.draw() 후 HUD.draw() 호출</subtask>
+        <subtask>테스트용 gameState 데이터 구조 생성</subtask>
+        <subtask>love . 실행하여 모든 HUD 요소 렌더링 확인</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC6-3-1">HUD.draw(gameState, screenWidth, screenHeight) 호출 시 모든 HUD 요소가 렌더링됨</ac>
+    <ac id="AC6-3-2">현재 플레이어의 5종 자원(목재, 벽돌, 양모, 밀, 광석)이 숫자로 표시됨</ac>
+    <ac id="AC6-3-3">현재 플레이어의 승리 점수가 표시됨</ac>
+    <ac id="AC6-3-4">현재 턴 플레이어가 누구인지 표시됨 (플레이어 번호 + 색상)</ac>
+    <ac id="AC6-3-5">주사위 굴림 후 결과(die1, die2, 합계)가 표시됨</ac>
+    <ac id="AC6-3-6">HUD 요소는 보드 렌더링 위에 표시됨 (최상단 레이어)</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-6.md" title="Epic 6 Tech Spec" section="AC-6.3, hud.lua Interface" snippet="HUD 인터페이스 정의: HUD.draw(gameState, screenWidth, screenHeight), drawResourcePanel, drawScorePanel, drawTurnInfo, drawDiceResult 함수 시그니처"/>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Project Structure, Data Architecture" snippet="src/ui/hud.lua 위치 정의, gameState.players 및 gameState.turn 구조, ADR-001 로직/렌더링 분리 원칙"/>
+      <doc path="docs/GDD.md" title="Game Design Document" section="Resource Systems" snippet="5종 자원 정의: wood(목재), brick(벽돌), sheep(양모), wheat(밀), ore(광석). 승리 조건: 10점 달성"/>
+    </docs>
+    <code>
+      <file path="src/ui/colors.lua" kind="module" symbol="Colors" lines="1-40" reason="플레이어 색상(Colors.PLAYER), UI 색상(Colors.UI) 재사용. HUD 렌더링에 필수적인 색상 정의 포함"/>
+      <file path="src/ui/board_view.lua" kind="module" symbol="BoardView" lines="1-285" reason="기존 UI 렌더링 패턴 참조. love.graphics 사용 패턴, setColor/print/polygon 호출 구조"/>
+      <file path="src/game/constants.lua" kind="module" symbol="Constants.RESOURCE_TYPES" lines="7-13" reason="자원 타입 순회용 배열. HUD에서 5종 자원 표시할 때 순서 유지"/>
+      <file path="src/game/player.lua" kind="module" symbol="Player" lines="1-111" reason="Player:getResource(), Player:getVictoryPoints() 메서드. 자원 및 점수 데이터 접근 방법"/>
+      <file path="main.lua" kind="entrypoint" symbol="love.draw" lines="63-74" reason="통합 위치. BoardView.draw() 후 HUD.draw() 호출 패턴 추가 필요"/>
+    </code>
+    <dependencies>
+      <lua>
+        <lib name="love2d" version="11.5+" purpose="그래픽 렌더링 (love.graphics.setColor, print, rectangle, circle)"/>
+        <lib name="classic" version="latest" purpose="클래스 시스템 (lib/classic.lua)"/>
+      </lua>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/ui/ 모듈은 Love2D 의존 가능, src/game/은 Love2D 의존 없음 유지</constraint>
+    <constraint source="Dev Notes">UI 모듈은 시각적 테스트(수동)로 검증. busted 단위 테스트 대상 아님</constraint>
+    <constraint source="Architecture">gameState 구조 참조: players[], turn.current, turn.phase, diceResult.die1/die2</constraint>
+    <constraint source="Dev Notes">기존 Colors 모듈의 Colors.PLAYER 재사용 권장</constraint>
+    <constraint source="Rendering Order">HUD는 보드 렌더링 후 최상단 레이어에 표시</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="HUD.draw" kind="function" signature="HUD.draw(gameState, screenWidth, screenHeight)" path="src/ui/hud.lua"/>
+    <interface name="HUD.drawResourcePanel" kind="function" signature="HUD.drawResourcePanel(player, x, y, width, height)" path="src/ui/hud.lua"/>
+    <interface name="HUD.drawScorePanel" kind="function" signature="HUD.drawScorePanel(players, currentPlayerId, x, y)" path="src/ui/hud.lua"/>
+    <interface name="HUD.drawTurnInfo" kind="function" signature="HUD.drawTurnInfo(currentPlayer, phase, x, y)" path="src/ui/hud.lua"/>
+    <interface name="HUD.drawDiceResult" kind="function" signature="HUD.drawDiceResult(die1, die2, x, y)" path="src/ui/hud.lua"/>
+    <interface name="Colors.PLAYER" kind="table" signature="Colors.PLAYER[1-4] = {r, g, b}" path="src/ui/colors.lua"/>
+    <interface name="Player:getResource" kind="method" signature="Player:getResource(resourceType) -> number|nil" path="src/game/player.lua"/>
+    <interface name="Player:getVictoryPoints" kind="method" signature="Player:getVictoryPoints() -> number" path="src/game/player.lua"/>
+    <interface name="Constants.RESOURCE_TYPES" kind="table" signature='{"wood", "brick", "sheep", "wheat", "ore"}' path="src/game/constants.lua"/>
+  </interfaces>
+
+  <tests>
+    <standards>UI 모듈(src/ui/)은 Love2D 의존성으로 인해 시각적 수동 테스트로 검증. busted 테스트 제외. main.lua에서 테스트용 gameState 데이터로 실행하여 HUD 렌더링 확인.</standards>
+    <locations>
+      <location>테스트 코드 없음 (시각적 테스트)</location>
+      <location>main.lua 내 테스트 데이터로 검증</location>
+    </locations>
+    <ideas>
+      <idea ac="AC6-3-1">love . 실행 시 HUD 요소가 화면에 표시되는지 확인</idea>
+      <idea ac="AC6-3-2">testGameState.players[1].resources 값이 화면에 정확히 표시되는지 확인</idea>
+      <idea ac="AC6-3-3">Player.getVictoryPoints() 결과와 화면 표시 값 일치 확인</idea>
+      <idea ac="AC6-3-4">현재 턴 플레이어 번호 및 색상 강조 확인</idea>
+      <idea ac="AC6-3-5">주사위 결과 nil일 때 표시 안됨, 값 있을 때 die1 + die2 = 합계 표시</idea>
+      <idea ac="AC6-3-5">7 굴림 시 특별 색상 표시 확인</idea>
+      <idea ac="AC6-3-6">HUD가 보드 위에 표시되는지 시각적 확인</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -3,10 +3,12 @@
 
 local Board = require("src.game.board")
 local BoardView = require("src.ui.board_view")
+local HUD = require("src.ui.hud")
 
 -- 게임 상태
 local board
 local testBuildings
+local testGameState
 local HEX_SIZE = 50
 local OFFSET_X, OFFSET_Y
 
@@ -54,6 +56,21 @@ function love.load()
       ["-1,0,SE"] = {player = 4}, -- Player 4 노랑 - 서쪽 헥스 SE
     },
   }
+
+  -- 테스트용 게임 상태 (HUD 렌더링 검증용)
+  testGameState = {
+    players = {
+      {id = 1, resources = {wood = 3, brick = 2, sheep = 1, wheat = 4, ore = 0}, victoryPoints = 3},
+      {id = 2, resources = {wood = 1, brick = 1, sheep = 2, wheat = 1, ore = 3}, victoryPoints = 5},
+      {id = 3, resources = {wood = 0, brick = 3, sheep = 0, wheat = 2, ore = 1}, victoryPoints = 2},
+      {id = 4, resources = {wood = 2, brick = 0, sheep = 3, wheat = 0, ore = 2}, victoryPoints = 4},
+    },
+    turn = {
+      current = 1,
+      phase = "build",
+    },
+    diceResult = {die1 = 3, die2 = 4},  -- 합계 7 테스트하려면 {die1 = 3, die2 = 4} 또는 nil
+  }
 end
 
 function love.update(dt)
@@ -67,8 +84,12 @@ function love.draw()
   -- 보드 렌더링 (건물 포함)
   BoardView.draw(board, HEX_SIZE, OFFSET_X, OFFSET_Y, testBuildings)
 
-  -- 디버그 정보
+  -- HUD 렌더링 (보드 위에 최상단 레이어)
+  local screenWidth = love.graphics.getWidth()
+  local screenHeight = love.graphics.getHeight()
+  HUD.draw(testGameState, screenWidth, screenHeight)
+
+  -- 디버그 정보 (HUD 아래 좌측 - 주사위 결과와 겹치지 않게 아래쪽으로 이동)
   love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print("Settlus of Catan", 10, 10)
-  love.graphics.print("FPS: " .. love.timer.getFPS(), 10, 30)
+  love.graphics.print("Settlus of Catan - FPS: " .. love.timer.getFPS(), 10, screenHeight - 20)
 end
