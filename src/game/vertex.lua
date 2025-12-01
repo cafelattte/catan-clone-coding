@@ -98,4 +98,29 @@ function Vertex.getAdjacentVertices(q, r, dir)
   return vertices
 end
 
+---
+-- 정점에 인접한 3개 변 조회
+-- @param q number
+-- @param r number
+-- @param dir string "N" 또는 "S"
+-- @return table 인접 변 목록 (정규화됨) {{q, r, dir}, ...}
+---
+function Vertex.getAdjacentEdges(q, r, dir)
+  -- Edge 모듈을 함수 내부에서 require (순환 의존성 방지)
+  local Edge = require("src.game.edge")
+  local edges = {}
+  if dir == "N" then
+    -- N 정점의 3개 인접 변
+    edges[1] = Edge.normalizeEdge(q, r, "NE")      -- 자신의 NE
+    edges[2] = Edge.normalizeEdge(q - 1, r, "E")   -- 왼쪽 헥스의 E
+    edges[3] = Edge.normalizeEdge(q, r - 1, "SE")  -- 위쪽 헥스의 SE
+  else -- S
+    -- S 정점의 3개 인접 변
+    edges[1] = Edge.normalizeEdge(q, r, "E")       -- 자신의 E
+    edges[2] = Edge.normalizeEdge(q, r, "SE")      -- 자신의 SE
+    edges[3] = Edge.normalizeEdge(q + 1, r, "NE")  -- 오른쪽 헥스의 NE
+  end
+  return edges
+end
+
 return Vertex

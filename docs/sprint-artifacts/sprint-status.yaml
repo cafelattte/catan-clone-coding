@@ -65,8 +65,8 @@ development_status:
   4-1-board-tiles: done
   4-2-number-tokens: done
   4-3-settlement-city-placement: done
-  4-4-road-placement: backlog
-  epic-4-retrospective: optional
+  4-4-road-placement: done
+  epic-4-retrospective: completed
 
   # Epic 5: Game Rules
   epic-5: backlog

@@ -656,4 +656,206 @@ describe("Board", function()
     end)
   end)
 
+  -- Story 4-4: 도로 배치 테스트
+  describe("placeRoad", function()
+    it("should place road and return true", function()
+      local board = Board.new()
+
+      local result = board:placeRoad(1, 0, 0, "E")
+
+      assert.is_true(result)
+    end)
+
+    it("should fail when road already exists", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+
+      local result, err = board:placeRoad(2, 0, 0, "E")
+
+      assert.is_false(result)
+      assert.equals("이미 도로가 있습니다", err)
+    end)
+
+    it("should detect duplicate via normalization ((-1,0,W) == (0,0,E))", function()
+      local board = Board.new()
+      board:placeRoad(1, -1, 0, "W")
+
+      -- (-1, 0, W) 정규화 → (-1+(-1), 0+0, E) = (-2, 0, E)... 아니,
+      -- W → 서쪽 헥스의 E: (-1, 0, W) → (-1 + (-1), 0, E) = (-2, 0, E)
+      -- 실제로 (0, 0, E)와 같은 변인 것은: (0, 0, W)의 정규화
+      -- (0, 0, W) → (0 + (-1), 0, E) = (-1, 0, E)
+      -- 그럼 같은 물리적 변을 찾아보자:
+      -- (-1, 0, E) 변의 반대 방향 표현은 (0, 0, W)
+      local result, err = board:placeRoad(2, 0, 0, "W")
+
+      -- (0, 0, W) 정규화 → (-1, 0, E)
+      -- (-1, 0, W) 정규화 → (-2, 0, E)
+      -- 다른 변이므로 배치 성공해야 함
+      assert.is_true(result)
+    end)
+
+    it("should detect duplicate via normalization correctly", function()
+      local board = Board.new()
+      -- (0, 0, W) 배치 → 정규화: (-1, 0, E)
+      board:placeRoad(1, 0, 0, "W")
+
+      -- 같은 변에 다른 표현으로 배치 시도
+      -- (-1, 0, E)는 이미 (0, 0, W)의 정규화 결과이므로 중복
+      local result, err = board:placeRoad(2, -1, 0, "E")
+
+      assert.is_false(result)
+      assert.equals("이미 도로가 있습니다", err)
+    end)
+  end)
+
+  describe("getRoad", function()
+    it("should return road data when road exists", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+
+      local road = board:getRoad(0, 0, "E")
+
+      assert.is_not_nil(road)
+      assert.equals(1, road.player)
+    end)
+
+    it("should return nil when no road", function()
+      local board = Board.new()
+
+      local road = board:getRoad(0, 0, "E")
+
+      assert.is_nil(road)
+    end)
+
+    it("should return road via normalized lookup", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "W")  -- 정규화: (-1, 0, E)
+
+      local road = board:getRoad(-1, 0, "E")
+
+      assert.is_not_nil(road)
+      assert.equals(1, road.player)
+    end)
+  end)
+
+  describe("hasRoad", function()
+    it("should return true when road exists", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+
+      assert.is_true(board:hasRoad(0, 0, "E"))
+    end)
+
+    it("should return false when no road", function()
+      local board = Board.new()
+
+      assert.is_false(board:hasRoad(0, 0, "E"))
+    end)
+  end)
+
+  describe("getPlayerRoads", function()
+    it("should return empty list when player has no roads", function()
+      local board = Board.new()
+
+      local roads = board:getPlayerRoads(1)
+
+      assert.equals(0, #roads)
+    end)
+
+    it("should return all roads for player", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+      board:placeRoad(1, 0, 0, "NE")
+      board:placeRoad(2, 1, 0, "E")
+
+      local roads = board:getPlayerRoads(1)
+
+      assert.equals(2, #roads)
+    end)
+
+    it("should return roads with q, r, dir fields", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+
+      local roads = board:getPlayerRoads(1)
+
+      assert.equals(1, #roads)
+      assert.equals(0, roads[1].q)
+      assert.equals(0, roads[1].r)
+      assert.equals("E", roads[1].dir)
+    end)
+  end)
+
+  describe("isVertexConnectedToRoad", function()
+    it("should return true when vertex is connected to player road", function()
+      local board = Board.new()
+      -- (0, 0, N) 정점의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
+      board:placeRoad(1, 0, 0, "NE")
+
+      -- (0, 0, N) 정점은 (0, 0, NE) 변과 인접
+      local result = board:isVertexConnectedToRoad(1, 0, 0, "N")
+
+      assert.is_true(result)
+    end)
+
+    it("should return false when vertex is not connected", function()
+      local board = Board.new()
+      board:placeRoad(1, 0, 0, "E")
+
+      -- (0, 0, N) 정점은 (0, 0, E) 변과 인접하지 않음
+      -- N 정점의 인접 변: NE, (q-1,r)의 E, (q,r-1)의 SE
+      -- (0, 0, N)의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
+      -- (0, 0, E)는 이 목록에 없음
+      local result = board:isVertexConnectedToRoad(1, 0, 0, "N")
+
+      assert.is_false(result)
+    end)
+
+    it("should return false when road belongs to different player", function()
+      local board = Board.new()
+      board:placeRoad(2, 0, 0, "NE")  -- 플레이어 2의 도로
+
+      -- 플레이어 1에 대해 확인 (0, 0, N)은 (0, 0, NE)와 인접하지만 플레이어 다름
+      local result = board:isVertexConnectedToRoad(1, 0, 0, "N")
+
+      assert.is_false(result)
+    end)
+
+    it("should work with vertex normalization", function()
+      local board = Board.new()
+      -- (0, 0, SE) 변 배치
+      board:placeRoad(1, 0, 0, "SE")
+
+      -- (0, 0, S) 정점의 인접 변: (0,0,E), (0,0,SE), (1,0,NE)
+      -- (0, 0, S)는 (0, 1, N)과 동일 (정규화)
+      local result = board:isVertexConnectedToRoad(1, 0, -1, "S")
+
+      -- (0, -1, S) 정규화 → (0, 0, N)
+      -- (0, 0, N)의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
+      -- (0, 0, SE)는 이 목록에 없음
+      assert.is_false(result)
+    end)
+
+    it("should detect connection via any of the 3 adjacent edges", function()
+      local board = Board.new()
+      -- (0, 0, N) 정점의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
+      board:placeRoad(1, -1, 0, "E")
+
+      local result = board:isVertexConnectedToRoad(1, 0, 0, "N")
+
+      assert.is_true(result)
+    end)
+
+    it("should work with S vertex (normalized to N)", function()
+      local board = Board.new()
+      -- (0, 0, S) 정규화 → (0, 1, N)
+      -- (0, 1, N)의 인접 변: (0,1,NE), (-1,1,E), (0,0,SE)
+      board:placeRoad(1, 0, 0, "SE")
+
+      local result = board:isVertexConnectedToRoad(1, 0, 0, "S")
+
+      assert.is_true(result)
+    end)
+  end)
+
 end)

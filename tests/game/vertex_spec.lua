@@ -121,4 +121,63 @@ describe("Vertex", function()
     end)
   end)
 
+  -- Story 4-4: 정점 인접 변 조회
+  describe("getAdjacentEdges", function()
+    it("should return 3 adjacent edges for N vertex", function()
+      local edges = Vertex.getAdjacentEdges(0, 0, "N")
+      assert.equals(3, #edges)
+    end)
+
+    it("should return 3 adjacent edges for S vertex", function()
+      local edges = Vertex.getAdjacentEdges(0, 0, "S")
+      assert.equals(3, #edges)
+    end)
+
+    it("should return normalized edges (NE, E, SE only)", function()
+      local edges = Vertex.getAdjacentEdges(0, 0, "N")
+      for _, e in ipairs(edges) do
+        assert.is_true(e.dir == "NE" or e.dir == "E" or e.dir == "SE",
+          "direction should be NE, E, or SE but got " .. e.dir)
+      end
+    end)
+
+    it("should return correct edges for (0,0,N)", function()
+      local edges = Vertex.getAdjacentEdges(0, 0, "N")
+      -- N 정점 인접 변: 자신의 NE, (q-1,r)의 E, (q,r-1)의 SE
+      -- 정규화 후: (0,0,NE), (-1,0,E), (0,-1,SE)
+      local found = {}
+      for _, e in ipairs(edges) do
+        local key = e.q .. "," .. e.r .. "," .. e.dir
+        found[key] = true
+      end
+      assert.is_true(found["0,0,NE"], "should include (0,0,NE)")
+      assert.is_true(found["-1,0,E"], "should include (-1,0,E)")
+      assert.is_true(found["0,-1,SE"], "should include (0,-1,SE)")
+    end)
+
+    it("should return correct edges for (0,0,S)", function()
+      local edges = Vertex.getAdjacentEdges(0, 0, "S")
+      -- S 정점 인접 변: 자신의 E, 자신의 SE, (q+1,r)의 NE
+      -- 정규화 후: (0,0,E), (0,0,SE), (1,0,NE)
+      local found = {}
+      for _, e in ipairs(edges) do
+        local key = e.q .. "," .. e.r .. "," .. e.dir
+        found[key] = true
+      end
+      assert.is_true(found["0,0,E"], "should include (0,0,E)")
+      assert.is_true(found["0,0,SE"], "should include (0,0,SE)")
+      assert.is_true(found["1,0,NE"], "should include (1,0,NE)")
+    end)
+
+    it("should return edges at different positions", function()
+      -- (1, -1, N) 정점의 인접 변 테스트
+      local edges = Vertex.getAdjacentEdges(1, -1, "N")
+      assert.equals(3, #edges)
+      -- 정규화된 방향만 반환되어야 함
+      for _, e in ipairs(edges) do
+        assert.is_true(e.dir == "NE" or e.dir == "E" or e.dir == "SE")
+      end
+    end)
+  end)
+
 end)

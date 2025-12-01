@@ -1,0 +1,158 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4</storyId>
+    <title>도로 배치</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-4-road-placement.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>변에 도로를 배치할 수 있어</iWant>
+    <soThat>플레이어 도로 네트워크 추적 가능</soThat>
+    <tasks>
+      <task id="0" ac="5-prereq">vertex.lua에 getAdjacentEdges 추가
+        <subtask id="0.1">Vertex.getAdjacentEdges(q, r, dir) 함수 구현</subtask>
+        <subtask id="0.2">N 정점 인접 변 계산: 자신의 NE, (q-1,r)의 E, (q,r-1)의 SE</subtask>
+        <subtask id="0.3">S 정점 인접 변 계산: 자신의 E, 자신의 SE, (q+1,r)의 NE</subtask>
+        <subtask id="0.4">반환값은 정규화된 변 목록</subtask>
+        <subtask id="0.5">tests/game/vertex_spec.lua에 getAdjacentEdges 테스트 추가</subtask>
+      </task>
+      <task id="1" ac="1,2,3">도로 저장 구조 구현
+        <subtask id="1.1">Board 테이블에 roads Map 구조 추가</subtask>
+        <subtask id="1.2">키 형식: 정규화된 변 문자열 (예: "0,0,E")</subtask>
+        <subtask id="1.3">값 형식: {player = playerId}</subtask>
+      </task>
+      <task id="2" ac="1,2,3,6">도로 배치 API 구현
+        <subtask id="2.1">board:placeRoad(playerId, q, r, dir) 메서드 구현</subtask>
+        <subtask id="2.2">edge.normalize(q, r, dir) 호출하여 정규화</subtask>
+        <subtask id="2.3">edgeKey 헬퍼 함수 추가</subtask>
+        <subtask id="2.4">중복 체크 (roads에서 확인)</subtask>
+        <subtask id="2.5">배치 성공 시 self.roads[key] = {player = playerId} 저장</subtask>
+        <subtask id="2.6">실패 시 false, "이미 도로가 있습니다" 반환</subtask>
+      </task>
+      <task id="3" ac="2">도로 조회 API 구현
+        <subtask id="3.1">board:getRoad(q, r, dir) 메서드 구현</subtask>
+        <subtask id="3.2">정규화 후 roads에서 조회</subtask>
+        <subtask id="3.3">도로 있으면 {player=playerId} 반환</subtask>
+        <subtask id="3.4">없으면 nil 반환</subtask>
+      </task>
+      <task id="4" ac="3">도로 존재 확인 API
+        <subtask id="4.1">board:hasRoad(q, r, dir) 메서드 구현</subtask>
+        <subtask id="4.2">정규화 후 roads에 존재하면 true</subtask>
+      </task>
+      <task id="5" ac="4">플레이어별 도로 조회 API
+        <subtask id="5.1">board:getPlayerRoads(playerId) 메서드 구현</subtask>
+        <subtask id="5.2">roads 순회하며 해당 플레이어 도로 수집</subtask>
+        <subtask id="5.3">반환 형식: {{q, r, dir}, ...} 목록</subtask>
+      </task>
+      <task id="6" ac="5">정점-도로 연결 확인 API
+        <subtask id="6.1">board:isVertexConnectedToRoad(playerId, q, r, dir) 메서드 구현</subtask>
+        <subtask id="6.2">정점 정규화</subtask>
+        <subtask id="6.3">Vertex.getAdjacentEdges 호출하여 인접 변 3개 조회</subtask>
+        <subtask id="6.4">각 인접 변에 해당 플레이어의 도로가 있는지 확인</subtask>
+        <subtask id="6.5">하나라도 있으면 true, 없으면 false</subtask>
+      </task>
+      <task id="7" ac="7">테스트 작성
+        <subtask id="7.1">도로 배치 성공 테스트</subtask>
+        <subtask id="7.2">도로 조회 테스트 (getRoad)</subtask>
+        <subtask id="7.3">중복 배치 실패 테스트</subtask>
+        <subtask id="7.4">정규화 일관성 테스트 ((-1,0,"W") == (0,0,"E"))</subtask>
+        <subtask id="7.5">hasRoad 테스트</subtask>
+        <subtask id="7.6">getPlayerRoads 테스트</subtask>
+        <subtask id="7.7">isVertexConnectedToRoad 테스트 (연결됨)</subtask>
+        <subtask id="7.8">isVertexConnectedToRoad 테스트 (연결 안됨)</subtask>
+        <subtask id="7.9">isVertexConnectedToRoad 테스트 (다른 플레이어 도로)</subtask>
+        <subtask id="7.10">모든 테스트 통과 확인</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC4-4-1">board:placeRoad(playerId, q, r, dir) 호출 시 해당 변에 도로 배치, true 반환</criterion>
+    <criterion id="AC4-4-2">board:getRoad(q, r, dir) 호출 시 {player=playerId} 반환</criterion>
+    <criterion id="AC4-4-3">이미 도로 있는 위치에 배치 시 false, 에러 메시지 반환</criterion>
+    <criterion id="AC4-4-4">board:getPlayerRoads(playerId) 호출 시 해당 플레이어의 모든 도로 목록 반환</criterion>
+    <criterion id="AC4-4-5">board:isVertexConnectedToRoad(playerId, q, r, dir) 호출 시 해당 정점이 플레이어 도로와 연결되면 true</criterion>
+    <criterion id="AC4-4-6">정규화: (-1, 0, "W")와 (0, 0, "E")가 같은 변이면 중복 감지</criterion>
+    <criterion id="AC4-4-7">테스트 통과: tests/game/board_spec.lua</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Technical Specification" section="Story 4-4: 도로 배치" snippet="AC4-4-1 through AC4-4-7 정의. board:placeRoad, getRoad, getPlayerRoads, isVertexConnectedToRoad API 명세."/>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Data Architecture, ADR-003" snippet="Map 기반 건물/도로 저장 구조. 정규화된 좌표 문자열을 키로 사용. roads['0,0,E'] = {player = 1}"/>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 4.4" snippet="변에 도로를 배치하여 플레이어 도로 네트워크 추적 가능. FR7 커버."/>
+      <doc path="docs/sprint-artifacts/4-3-settlement-city-placement.md" title="Story 4-3 (Previous)" section="Dev Agent Record" snippet="settlements/cities Map 패턴, vertexKey 헬퍼, boolean+error 반환 패턴 확립. 동일 패턴으로 roads 구현."/>
+    </docs>
+    <code>
+      <file path="src/game/board.lua" kind="module" symbol="Board" lines="77-86" reason="Board.new()에 roads Map 추가 필요. settlements/cities 패턴 참조."/>
+      <file path="src/game/board.lua" kind="module" symbol="vertexKey" lines="179-182" reason="edgeKey 헬퍼 구현 시 참고. 정규화 후 문자열 변환 패턴."/>
+      <file path="src/game/board.lua" kind="module" symbol="placeSettlement" lines="192-206" reason="placeRoad 구현 시 참고. 중복 체크 + 배치 패턴."/>
+      <file path="src/game/board.lua" kind="module" symbol="getPlayerBuildings" lines="261-281" reason="getPlayerRoads 구현 시 참고. Map 순회 + 수집 패턴."/>
+      <file path="src/game/edge.lua" kind="module" symbol="Edge.normalize" lines="30-37" reason="도로 배치 시 변 정규화에 사용. NW/W/SW → NE/E/SE 변환."/>
+      <file path="src/game/edge.lua" kind="module" symbol="Edge.toString" lines="46-48" reason="edgeKey 구현에 활용. 'q,r,dir' 형식."/>
+      <file path="src/game/edge.lua" kind="module" symbol="Edge.normalizeEdge" lines="126-129" reason="getAdjacentEdges 구현 시 정규화된 변 테이블 반환에 사용."/>
+      <file path="src/game/edge.lua" kind="module" symbol="Edge.getVertices" lines="67-88" reason="변의 양 끝 정점 조회. isVertexConnectedToRoad 검증에 활용 가능."/>
+      <file path="src/game/vertex.lua" kind="module" symbol="Vertex" lines="1-101" reason="getAdjacentEdges 함수 추가 대상. getAdjacentHexes, getAdjacentVertices 패턴 참조."/>
+      <file path="tests/game/board_spec.lua" kind="test" symbol="describe('Board')" lines="1-659" reason="도로 관련 테스트 추가 위치. Story 4-3 테스트 패턴 참조."/>
+      <file path="tests/game/vertex_spec.lua" kind="test" symbol="describe('Vertex')" lines="1-124" reason="getAdjacentEdges 테스트 추가 위치. getAdjacentHexes/getAdjacentVertices 테스트 패턴 참조."/>
+      <file path="tests/game/edge_spec.lua" kind="test" symbol="describe('Edge')" lines="1-141" reason="Edge 모듈 테스트. getAdjacentEdges 테스트 패턴 참조."/>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="love" version="11.5+" purpose="Game engine (not used in src/game/)"/>
+        <package name="busted" version="latest" purpose="Testing framework"/>
+        <package name="classic" version="lib/" purpose="Class system"/>
+        <package name="serpent" version="lib/" purpose="Serialization"/>
+      </lua>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="ADR-001">src/game/ 모듈은 Love2D 의존 없이 순수 Lua로 구현. busted로 독립 테스트 가능해야 함.</constraint>
+    <constraint source="ADR-003">Map 기반 저장 구조 사용. 정규화된 좌표 문자열을 키로 사용하여 O(1) 조회, 중복 자동 방지.</constraint>
+    <constraint source="Architecture">API 시그니처: 실패 시 false + error message 반환 패턴 준수.</constraint>
+    <constraint source="Architecture">함수명 camelCase, 상수 UPPER_SNAKE 규칙 준수.</constraint>
+    <constraint source="Story 4-3">이전 스토리에서 확립된 패턴(vertexKey, Map 구조, 테스트 스타일) 일관성 유지.</constraint>
+    <constraint source="Circular Dependency">Vertex→Edge 의존 시 함수 내부에서 require하여 순환 의존성 방지.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="board:placeRoad" kind="method" signature="function(playerId: number, q: number, r: number, dir: string): boolean, string|nil" path="src/game/board.lua"/>
+    <interface name="board:getRoad" kind="method" signature="function(q: number, r: number, dir: string): table|nil" path="src/game/board.lua"/>
+    <interface name="board:hasRoad" kind="method" signature="function(q: number, r: number, dir: string): boolean" path="src/game/board.lua"/>
+    <interface name="board:getPlayerRoads" kind="method" signature="function(playerId: number): table" path="src/game/board.lua"/>
+    <interface name="board:isVertexConnectedToRoad" kind="method" signature="function(playerId: number, q: number, r: number, dir: string): boolean" path="src/game/board.lua"/>
+    <interface name="Vertex.getAdjacentEdges" kind="function" signature="function(q: number, r: number, dir: string): table" path="src/game/vertex.lua" note="NEW - 이 스토리에서 추가"/>
+    <interface name="Edge.normalize" kind="function" signature="function(q: number, r: number, dir: string): q, r, dir" path="src/game/edge.lua"/>
+    <interface name="Edge.normalizeEdge" kind="function" signature="function(q: number, r: number, dir: string): table" path="src/game/edge.lua"/>
+    <interface name="Edge.toString" kind="function" signature="function(q: number, r: number, dir: string): string" path="src/game/edge.lua"/>
+    <interface name="Edge.fromString" kind="function" signature="function(str: string): q, r, dir" path="src/game/edge.lua"/>
+  </interfaces>
+
+  <tests>
+    <standards>busted BDD 스타일 테스트 사용. describe/it 블록으로 구조화. assert.equals, assert.is_true, assert.is_false, assert.is_nil, assert.is_not_nil 사용. 테스트 파일은 *_spec.lua 패턴.</standards>
+    <locations>
+      <location>tests/game/board_spec.lua</location>
+      <location>tests/game/vertex_spec.lua</location>
+    </locations>
+    <ideas>
+      <idea ac="AC4-4-1">placeRoad 성공 시 true 반환 테스트</idea>
+      <idea ac="AC4-4-2">getRoad로 배치된 도로 조회 테스트</idea>
+      <idea ac="AC4-4-3">중복 배치 시 false + 에러 메시지 테스트</idea>
+      <idea ac="AC4-4-4">getPlayerRoads로 플레이어별 도로 목록 테스트</idea>
+      <idea ac="AC4-4-5">isVertexConnectedToRoad - 연결된 경우 true 테스트</idea>
+      <idea ac="AC4-4-5">isVertexConnectedToRoad - 연결 안된 경우 false 테스트</idea>
+      <idea ac="AC4-4-5">isVertexConnectedToRoad - 다른 플레이어 도로는 false 테스트</idea>
+      <idea ac="AC4-4-6">정규화 일관성: (-1,0,W) == (0,0,E) 중복 감지 테스트</idea>
+      <idea ac="AC4-4-7">hasRoad 존재/비존재 테스트</idea>
+      <idea ac="Task0">Vertex.getAdjacentEdges - N 정점 인접 변 3개 테스트</idea>
+      <idea ac="Task0">Vertex.getAdjacentEdges - S 정점 인접 변 3개 테스트</idea>
+      <idea ac="Task0">Vertex.getAdjacentEdges - 정규화된 방향(NE/E/SE) 반환 테스트</idea>
+    </ideas>
+  </tests>
+</story-context>

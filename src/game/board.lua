@@ -3,6 +3,7 @@
 
 local Constants = require("src.game.constants")
 local Vertex = require("src.game.vertex")
+local Edge = require("src.game.edge")
 
 local Board = {}
 Board.__index = Board
@@ -82,6 +83,9 @@ function Board.new()
   -- 키: 정규화된 정점 문자열 "q,r,dir", 값: {player = playerId}
   self.settlements = {}
   self.cities = {}
+  -- Story 4-4: 도로 저장 구조
+  -- 키: 정규화된 변 문자열 "q,r,dir", 값: {player = playerId}
+  self.roads = {}
   return self
 end
 
@@ -386,6 +390,110 @@ function Board:getCitiesOnTile(q, r)
   end
 
   return cities
+end
+
+-- Story 4-4: 도로 배치 API
+
+---
+-- 변 키 생성 헬퍼 (정규화 후 문자열 변환)
+-- @param q number
+-- @param r number
+-- @param dir string "NE", "E", "SE", "NW", "W", "SW"
+-- @return string 정규화된 변 키
+---
+local function edgeKey(q, r, dir)
+  local nq, nr, ndir = Edge.normalize(q, r, dir)
+  return Edge.toString(nq, nr, ndir)
+end
+
+---
+-- 도로 배치
+-- @param playerId number 플레이어 ID (1-4)
+-- @param q number
+-- @param r number
+-- @param dir string
+-- @return boolean, string|nil 성공 시 true, 실패 시 false와 에러 메시지
+---
+function Board:placeRoad(playerId, q, r, dir)
+  local key = edgeKey(q, r, dir)
+
+  -- 중복 체크
+  if self.roads[key] then
+    return false, "이미 도로가 있습니다"
+  end
+
+  -- 배치
+  self.roads[key] = {player = playerId}
+  return true
+end
+
+---
+-- 도로 조회
+-- @param q number
+-- @param r number
+-- @param dir string
+-- @return table|nil {player=playerId} 또는 nil
+---
+function Board:getRoad(q, r, dir)
+  local key = edgeKey(q, r, dir)
+  return self.roads[key]
+end
+
+---
+-- 도로 존재 여부 확인
+-- @param q number
+-- @param r number
+-- @param dir string
+-- @return boolean
+---
+function Board:hasRoad(q, r, dir)
+  local key = edgeKey(q, r, dir)
+  return self.roads[key] ~= nil
+end
+
+---
+-- 플레이어별 도로 목록 조회
+-- @param playerId number
+-- @return table {{q, r, dir}, ...}
+---
+function Board:getPlayerRoads(playerId)
+  local roads = {}
+
+  for key, data in pairs(self.roads) do
+    if data.player == playerId then
+      local q, r, dir = Edge.fromString(key)
+      roads[#roads + 1] = {q = q, r = r, dir = dir}
+    end
+  end
+
+  return roads
+end
+
+---
+-- 정점이 플레이어 도로와 연결되어 있는지 확인
+-- @param playerId number
+-- @param q number
+-- @param r number
+-- @param dir string "N" 또는 "S"
+-- @return boolean
+---
+function Board:isVertexConnectedToRoad(playerId, q, r, dir)
+  -- 정점 정규화
+  local nq, nr, ndir = Vertex.normalize(q, r, dir)
+
+  -- 인접 변 3개 조회
+  local adjacentEdges = Vertex.getAdjacentEdges(nq, nr, ndir)
+
+  -- 각 인접 변에 해당 플레이어의 도로가 있는지 확인
+  for _, edge in ipairs(adjacentEdges) do
+    local key = Edge.toString(edge.q, edge.r, edge.dir)
+    local road = self.roads[key]
+    if road and road.player == playerId then
+      return true
+    end
+  end
+
+  return false
 end
 
 return Board
