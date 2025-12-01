@@ -1,0 +1,140 @@
+<story-context id="bmm/story-context" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6-4</storyId>
+    <title>Mouse to Hex Conversion</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/6-4-mouse-to-hex.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>플레이어</asA>
+    <iWant>마우스 클릭 위치가 헥스/정점/변 좌표로 변환되기를</iWant>
+    <soThat>보드에서 원하는 위치를 선택하여 건물을 배치할 수 있다</soThat>
+    <tasks>
+      <task n="1">Input 모듈 생성 - src/ui/input.lua 파일 생성, hex/vertex/edge 의존성 추가</task>
+      <task n="2">pixelToHex 함수 구현 - hex.pixelToCube 활용, axial 좌표 반환</task>
+      <task n="3">pixelToVertex 함수 구현 - 가장 가까운 정점 찾기, threshold 적용, vertex.normalize 활용</task>
+      <task n="4">pixelToEdge 함수 구현 - 가장 가까운 변 찾기, 점-선분 거리 계산, edge.normalize 활용</task>
+      <task n="5">좌표→픽셀 변환 함수 - getVertexPixel, getEdgePixels 구현</task>
+      <task n="6">main.lua 통합 - love.mousepressed 콜백에서 좌표 변환 테스트</task>
+      <task n="7">테스트 작성 - tests/ui/input_spec.lua 생성, 각 함수 테스트</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="6-4.1" title="헥스 좌표 변환">
+      픽셀→헥스(q,r) 변환 함수, 보드 내 클릭 시 올바른 좌표 반환, 보드 외부 클릭 시 nil
+    </ac>
+    <ac id="6-4.2" title="정점 좌표 변환">
+      픽셀→정점(q,r,dir) 변환, threshold 내 클릭 시 정점 반환, threshold 외부 시 nil
+    </ac>
+    <ac id="6-4.3" title="변 좌표 변환">
+      픽셀→변(q,r,dir) 변환, threshold 내 클릭 시 변 반환, threshold 외부 시 nil
+    </ac>
+    <ac id="6-4.4" title="정점/변 픽셀 좌표 계산">
+      정점(q,r,dir)→픽셀, 변(q,r,dir)→양 끝점 픽셀 좌표 변환 함수
+    </ac>
+    <ac id="6-4.5" title="디버그 출력">
+      클릭 시 콘솔에 변환된 좌표 출력 (개발용)
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/GDD.md" title="Game Design Document" section="Controls and Input"
+           snippet="마우스 클릭 - 타일/정점/변 선택, 마우스 호버 - 건설 가능 위치 하이라이트" />
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Coordinate System Architecture"
+           snippet="Storage: Axial (q, r), Calculation: Cube (x, y, z), Rendering: Pixel (px, py). 정점: {q, r, dir} (N, S), 변: {q, r, dir} (NE, E, SE)" />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-6.md" title="Epic 6 Tech Spec" section="input.lua Interface"
+           snippet="pixelToHex, pixelToVertex, pixelToEdge, getVertexPixel, getEdgePixels 함수 시그니처 정의" />
+    </docs>
+
+    <code>
+      <file path="src/game/hex.lua" kind="module" symbol="Hex" lines="all"
+            reason="핵심 의존성 - pixelToCube, cubeToPixel, cubeRound, axialToCube, cubeToAxial 함수 사용" />
+      <file path="src/game/vertex.lua" kind="module" symbol="Vertex" lines="all"
+            reason="정점 정규화 - normalize, getAdjacentHexes, toString, fromString 함수 사용" />
+      <file path="src/game/edge.lua" kind="module" symbol="Edge" lines="all"
+            reason="변 정규화 - normalize, getVertices, toString, fromString 함수 사용" />
+      <file path="src/ui/board_view.lua" kind="module" symbol="BoardView" lines="93-122"
+            reason="참조 구현 - getVertexPixel, getEdgePixels 로컬 함수 존재 (Input 모듈로 추출/재사용 가능)" />
+      <file path="src/game/board.lua" kind="module" symbol="Board" lines="12-23"
+            reason="BOARD_COORDS - 19개 헥스 좌표 목록 (보드 범위 체크용)" />
+    </code>
+
+    <dependencies>
+      <dependency name="Love2D" version="11.5+" purpose="love.mousepressed 콜백, love.graphics 좌표계" />
+      <dependency name="busted" version="latest" purpose="테스트 프레임워크" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">src/ui/ 모듈은 src/game/ 모듈에만 단방향 의존</constraint>
+    <constraint type="pattern">Pointy-top 헥스 레이아웃 사용 (tech-spec 결정)</constraint>
+    <constraint type="normalization">정점은 N/S 방향만, 변은 NE/E/SE 방향만 사용 (정규화)</constraint>
+    <constraint type="coordinates">저장은 Axial, 계산은 Cube, 렌더링은 Pixel (ADR-002)</constraint>
+    <constraint type="testing">Input.lua의 순수 계산 로직은 busted 테스트 가능</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Hex.pixelToCube" kind="function"
+               signature="pixelToCube(px, py, size) -> x, y, z"
+               path="src/game/hex.lua:102-108" />
+    <interface name="Hex.cubeToPixel" kind="function"
+               signature="cubeToPixel(x, y, z, size) -> px, py"
+               path="src/game/hex.lua:87-93" />
+    <interface name="Hex.cubeToAxial" kind="function"
+               signature="cubeToAxial(x, y, z) -> q, r"
+               path="src/game/hex.lua:47-49" />
+    <interface name="Hex.axialToCube" kind="function"
+               signature="axialToCube(q, r) -> x, y, z"
+               path="src/game/hex.lua:33-38" />
+    <interface name="Vertex.normalize" kind="function"
+               signature="normalize(q, r, dir) -> q, r, dir"
+               path="src/game/vertex.lua:21-30" />
+    <interface name="Vertex.getAdjacentHexes" kind="function"
+               signature="getAdjacentHexes(q, r, dir) -> {{q, r}, ...}"
+               path="src/game/vertex.lua:60-75" />
+    <interface name="Edge.normalize" kind="function"
+               signature="normalize(q, r, dir) -> q, r, dir"
+               path="src/game/edge.lua:30-37" />
+    <interface name="Edge.getVertices" kind="function"
+               signature="getVertices(q, r, dir) -> v1, v2"
+               path="src/game/edge.lua:67-87" />
+    <interface name="love.mousepressed" kind="callback"
+               signature="love.mousepressed(x, y, button, istouch, presses)"
+               path="main.lua" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      busted BDD 스타일 테스트. describe/it 구조. AAA 패턴 (Arrange-Act-Assert).
+      src/game/ 모듈 90%+ 커버리지 목표. UI 모듈 중 순수 계산 로직만 테스트 가능.
+    </standards>
+    <locations>
+      <location>tests/ui/input_spec.lua (신규 생성)</location>
+      <location>tests/game/hex_spec.lua (기존 - pixelToCube/cubeToPixel 참조)</location>
+    </locations>
+    <ideas>
+      <idea ac="6-4.1">pixelToHex - 중앙(0,0) 픽셀에서 (0,0) 헥스 반환 확인</idea>
+      <idea ac="6-4.1">pixelToHex - 보드 외부 (매우 먼 좌표)에서 nil 반환 확인</idea>
+      <idea ac="6-4.2">pixelToVertex - N 정점 근처 클릭 시 올바른 (q,r,N) 반환</idea>
+      <idea ac="6-4.2">pixelToVertex - threshold 경계값 테스트</idea>
+      <idea ac="6-4.3">pixelToEdge - E 변 중앙 근처 클릭 시 올바른 (q,r,E) 반환</idea>
+      <idea ac="6-4.3">pixelToEdge - 점-선분 거리 threshold 테스트</idea>
+      <idea ac="6-4.4">getVertexPixel - 왕복 테스트 (pixel→vertex→pixel)</idea>
+      <idea ac="6-4.4">getEdgePixels - 양 끝점이 올바른 정점 픽셀과 일치</idea>
+    </ideas>
+  </tests>
+
+  <devNotes>
+    <note type="reuse">board_view.lua의 getVertexPixel, getEdgePixels 로컬 함수를 Input 모듈로 추출하거나 공유 가능</note>
+    <note type="config">HEX_SIZE=50, OFFSET_X=640, OFFSET_Y=360, VERTEX_THRESHOLD=15, EDGE_THRESHOLD=10 (tech-spec)</note>
+    <note type="formula">픽셀→헥스: Hex.pixelToCube로 큐브 좌표 얻은 후 cubeToAxial로 axial 변환</note>
+    <note type="algorithm">픽셀→정점: 가장 가까운 헥스의 6개 정점과 거리 비교, 가장 가까운 것 선택</note>
+    <note type="algorithm">픽셀→변: 점-선분 거리 공식 사용, 6개 변 중 가장 가까운 것 선택</note>
+  </devNotes>
+</story-context>

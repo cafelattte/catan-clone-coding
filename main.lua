@@ -4,6 +4,7 @@
 local Board = require("src.game.board")
 local BoardView = require("src.ui.board_view")
 local HUD = require("src.ui.hud")
+local Input = require("src.ui.input")
 
 -- 게임 상태
 local board
@@ -92,4 +93,40 @@ function love.draw()
   -- 디버그 정보 (HUD 아래 좌측 - 주사위 결과와 겹치지 않게 아래쪽으로 이동)
   love.graphics.setColor(1, 1, 1, 1)
   love.graphics.print("Settlus of Catan - FPS: " .. love.timer.getFPS(), 10, screenHeight - 20)
+end
+
+-- 마우스 클릭 처리 (디버그용)
+function love.mousepressed(x, y, button)
+  if button == 1 then -- 좌클릭
+    local VERTEX_THRESHOLD = 15
+    local EDGE_THRESHOLD = 10
+
+    -- 헥스 좌표 변환
+    local hex = Input.pixelToHex(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y)
+
+    -- 정점 좌표 변환
+    local vertex = Input.pixelToVertex(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, VERTEX_THRESHOLD)
+
+    -- 변 좌표 변환
+    local edge = Input.pixelToEdge(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, EDGE_THRESHOLD)
+
+    -- 디버그 출력
+    print(string.format("Click: (%d, %d)", x, y))
+    if hex then
+      print(string.format("  Hex: (%d, %d)", hex.q, hex.r))
+    else
+      print("  Hex: nil (outside board)")
+    end
+    if vertex then
+      print(string.format("  Vertex: (%d, %d, %s)", vertex.q, vertex.r, vertex.dir))
+    else
+      print("  Vertex: nil (outside threshold)")
+    end
+    if edge then
+      print(string.format("  Edge: (%d, %d, %s)", edge.q, edge.r, edge.dir))
+    else
+      print("  Edge: nil (outside threshold)")
+    end
+    print("")  -- 빈 줄로 구분
+  end
 end
