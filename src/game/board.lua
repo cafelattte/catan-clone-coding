@@ -90,6 +90,32 @@ function Board.new()
 end
 
 ---
+-- 테스트용 고정 보드 생성
+-- @param tiles table 타일 목록 {{q, r, terrain, number}, ...}
+-- @return Board 초기화된 보드 인스턴스
+---
+function Board.newForTesting(tiles)
+  local self = Board.new()
+
+  for _, tile in ipairs(tiles) do
+    local key = tileKey(tile.q, tile.r)
+    self.tiles[key] = {
+      q = tile.q,
+      r = tile.r,
+      terrain = tile.terrain,
+      number = tile.number
+    }
+
+    -- 사막 타일에 도둑 배치
+    if tile.terrain == "desert" then
+      self.robber = {q = tile.q, r = tile.r}
+    end
+  end
+
+  return self
+end
+
+---
 -- 표준 카탄 보드 생성 (19개 타일)
 -- @return Board 초기화된 보드 인스턴스
 ---

@@ -1,0 +1,191 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>2</storyId>
+    <title>페이즈 관리</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/7-2-phase-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>게임 시스템</asA>
+    <iWant>턴 내 페이즈(roll, main)를 관리할 수 있어</iWant>
+    <soThat>정해진 순서로 액션 수행 가능</soThat>
+    <tasks>
+      <task id="1" name="페이즈 관리 기본 구현" ac="7-2.1, 7-2.3">
+        <subtask id="1.1">GameState에 getPhase() 함수 추가</subtask>
+        <subtask id="1.2">GameState에 setPhase() 함수 추가</subtask>
+        <subtask id="1.3">endTurn()에서 phase = "roll" 리셋 추가</subtask>
+        <subtask id="1.4">endTurn()에서 diceResult = nil 초기화 추가</subtask>
+      </task>
+      <task id="2" name="주사위 굴림 및 자원 분배 연동" ac="7-2.2">
+        <subtask id="2.1">GameState에 rollDice() 함수 구현</subtask>
+        <subtask id="2.2">rollDice()에서 Dice 모듈 호출</subtask>
+        <subtask id="2.3">rollDice()에서 diceResult 저장</subtask>
+        <subtask id="2.4">rollDice()에서 phase = "main" 설정</subtask>
+        <subtask id="2.5">rollDice()에서 Rules.distributeResources 연동 (7 제외)</subtask>
+      </task>
+      <task id="3" name="페이즈 기반 액션 제한" ac="7-2.4">
+        <subtask id="3.1">GameState에 canRoll() 함수 구현</subtask>
+        <subtask id="3.2">GameState에 canBuild() 함수 구현</subtask>
+        <subtask id="3.3">각 함수에서 mode와 phase 체크 로직</subtask>
+      </task>
+      <task id="4" name="승리 체크 연동" ac="7-2.5">
+        <subtask id="4.1">GameState에 checkVictory() 함수 구현</subtask>
+        <subtask id="4.2">checkVictory()에서 Rules.checkVictory 연동</subtask>
+        <subtask id="4.3">승자 발견 시 mode = "finished", winner 설정</subtask>
+      </task>
+      <task id="5" name="테스트 작성" ac="All">
+        <subtask id="5.1">game_state_spec.lua에 페이즈 관리 테스트 추가</subtask>
+        <subtask id="5.2">초기 페이즈 상태 테스트</subtask>
+        <subtask id="5.3">rollDice 후 페이즈 전환 테스트</subtask>
+        <subtask id="5.4">endTurn 후 페이즈 리셋 테스트</subtask>
+        <subtask id="5.5">canRoll/canBuild 테스트</subtask>
+        <subtask id="5.6">승리 체크 연동 테스트</subtask>
+        <subtask id="5.7">자원 분배 연동 테스트</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="7-2.1" title="초기 페이즈 상태">
+      <check>턴 시작 시 game:getPhase() 호출 → "roll" 반환</check>
+      <check>새 게임 시작 시 mode = "playing", phase = "roll"</check>
+    </criterion>
+    <criterion id="7-2.2" title="주사위 굴림 및 페이즈 전환">
+      <check>roll 페이즈에서 game:rollDice() 호출 시 {die1, die2, sum} 반환</check>
+      <check>rollDice() 완료 후 페이즈 = "main"</check>
+      <check>주사위 결과가 game.diceResult에 저장됨</check>
+      <check>7이 아닌 숫자일 때 자원 분배 실행 (Rules.distributeResources 연동)</check>
+    </criterion>
+    <criterion id="7-2.3" title="턴 종료 시 페이즈 리셋">
+      <check>main 페이즈에서 game:endTurn() 호출 시 다음 플레이어로 전환</check>
+      <check>endTurn() 후 페이즈 = "roll"로 리셋</check>
+      <check>diceResult = nil로 초기화</check>
+    </criterion>
+    <criterion id="7-2.4" title="페이즈 기반 액션 제한">
+      <check>game:canRoll() - mode == "playing" AND phase == "roll"일 때만 true</check>
+      <check>game:canBuild() - mode == "playing" AND phase == "main"일 때만 true</check>
+      <check>roll 페이즈에서 건설 시도 시 실패 (canBuild() = false)</check>
+      <check>main 페이즈에서 주사위 굴림 시도 시 실패 (canRoll() = false)</check>
+    </criterion>
+    <criterion id="7-2.5" title="승리 체크 연동">
+      <check>건설 완료 직후 game:checkVictory() 호출</check>
+      <check>승자 있으면 mode = "finished", winner 설정</check>
+      <check>승자 없으면 게임 계속</check>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-7.md" title="Epic 7 Technical Specification" section="AC 7-2: 페이즈 관리">
+        GameState 구조, APIs, 턴 내 페이즈 전환 시퀀스 정의. rollDice(), canRoll(), canBuild(), checkVictory() API 시그니처 포함.
+      </doc>
+      <doc path="docs/game-architecture.md" title="Game Architecture" section="Data Architecture - GameState 구조">
+        전체 아키텍처 및 GameState 데이터 모델 정의. turn.phase, mode 필드 구조.
+      </doc>
+      <doc path="docs/sprint-artifacts/7-1-turn-order.md" title="Story 7-1" section="Dev Agent Record">
+        이전 스토리에서 구현된 GameState 기반 클래스. turn, mode, board, diceResult, winner 필드가 이미 정의됨.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="src/game/game_state.lua" kind="module" symbol="GameState" lines="1-93" reason="확장 대상. 현재 turn.phase가 nil로 초기화됨. getPhase, setPhase, rollDice, canRoll, canBuild, checkVictory 함수 추가 필요.">
+        <existingMethods>new, getCurrentPlayer, getCurrentPlayerId, getPlayer, nextPlayer, endTurn, getRound</existingMethods>
+        <fieldsToUse>turn.phase, mode, diceResult, winner, board, players, config.victoryTarget</fieldsToUse>
+      </artifact>
+      <artifact path="src/game/dice.lua" kind="module" symbol="Dice" lines="1-27" reason="rollDice()에서 호출. Dice.roll() → {die1, die2, sum} 반환.">
+        <signature>Dice.roll() -> {die1, die2, sum}</signature>
+        <signature>Dice.setSeed(seed) -- 테스트용</signature>
+      </artifact>
+      <artifact path="src/game/rules.lua" kind="module" symbol="Rules" lines="1-358" reason="자원 분배 및 승리 체크에 사용.">
+        <signature>Rules.distributeResources(board, players, rolledNumber)</signature>
+        <signature>Rules.checkVictory(players, victoryTarget) -> number|nil</signature>
+      </artifact>
+      <artifact path="tests/game/game_state_spec.lua" kind="test" symbol="GameState tests" lines="1-302" reason="기존 32개 테스트에 페이즈 관리 테스트 추가 필요.">
+        <existingTests>new, getCurrentPlayer, getCurrentPlayerId, getPlayer, endTurn(4/3/2인), getRound</existingTests>
+      </artifact>
+    </code>
+    <dependencies>
+      <lua>
+        <package name="classic" version="latest" purpose="클래스 시스템" />
+        <package name="busted" version="latest" purpose="테스트 프레임워크" />
+      </lua>
+      <love2d version="11.5+" purpose="게임 엔진 (UI에서만 사용)" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">src/game/ 모듈은 Love2D 의존성 없이 순수 Lua로 구현</constraint>
+    <constraint type="pattern">실패 시 nil + error message 반환 패턴 사용</constraint>
+    <constraint type="naming">파일: snake_case, 클래스: PascalCase, 함수: camelCase</constraint>
+    <constraint type="testing">TDD - 테스트 먼저 작성, BDD 스타일 (describe/it)</constraint>
+    <constraint type="dependency">Rules 모듈과 Dice 모듈은 이미 구현됨 - 재사용</constraint>
+    <constraint type="state">mode == "playing"에서만 turn.phase 유효</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="GameState:getPhase()" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:getPhase() -> string -- "roll" | "main"</signature>
+      <note>turn.phase 반환</note>
+    </interface>
+    <interface name="GameState:setPhase(phase)" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:setPhase(phase: string) -> void</signature>
+      <note>turn.phase 설정 (내부 헬퍼)</note>
+    </interface>
+    <interface name="GameState:rollDice()" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:rollDice() -> {die1, die2, sum} | nil, string</signature>
+      <note>Dice.roll() 호출, diceResult 저장, phase="main" 설정, 7 아니면 자원 분배</note>
+    </interface>
+    <interface name="GameState:canRoll()" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:canRoll() -> boolean</signature>
+      <note>mode == "playing" AND phase == "roll"</note>
+    </interface>
+    <interface name="GameState:canBuild()" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:canBuild() -> boolean</signature>
+      <note>mode == "playing" AND phase == "main"</note>
+    </interface>
+    <interface name="GameState:checkVictory()" kind="method" path="src/game/game_state.lua">
+      <signature>function GameState:checkVictory() -> number|nil</signature>
+      <note>Rules.checkVictory 호출, 승자 시 mode="finished", winner 설정</note>
+    </interface>
+    <interface name="Dice.roll()" kind="function" path="src/game/dice.lua">
+      <signature>function Dice.roll() -> {die1: number, die2: number, sum: number}</signature>
+    </interface>
+    <interface name="Rules.distributeResources()" kind="function" path="src/game/rules.lua">
+      <signature>function Rules.distributeResources(board, players, rolledNumber)</signature>
+    </interface>
+    <interface name="Rules.checkVictory()" kind="function" path="src/game/rules.lua">
+      <signature>function Rules.checkVictory(players, victoryTarget) -> number|nil</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      busted 테스트 프레임워크 사용. BDD 스타일 describe/it 블록.
+      before_each로 모듈 로드. Arrange-Act-Assert 패턴.
+      assert.equals(), assert.is_true(), assert.is_false(), assert.is_nil(), assert.is_not_nil() 사용.
+    </standards>
+    <locations>
+      <location>tests/game/game_state_spec.lua</location>
+    </locations>
+    <ideas>
+      <idea ac="7-2.1">새 게임 생성 시 turn.phase == "roll" 확인</idea>
+      <idea ac="7-2.1">getPhase()가 "roll" 반환 확인</idea>
+      <idea ac="7-2.2">rollDice() 호출 후 phase == "main" 확인</idea>
+      <idea ac="7-2.2">rollDice() 반환값 {die1, die2, sum} 구조 확인</idea>
+      <idea ac="7-2.2">rollDice() 후 diceResult 저장 확인</idea>
+      <idea ac="7-2.2">rollDice() 7 아닐 때 자원 분배 연동 확인 (mock board/players)</idea>
+      <idea ac="7-2.3">endTurn() 후 phase == "roll" 리셋 확인</idea>
+      <idea ac="7-2.3">endTurn() 후 diceResult == nil 확인</idea>
+      <idea ac="7-2.4">canRoll() - mode="playing", phase="roll" → true</idea>
+      <idea ac="7-2.4">canRoll() - mode="playing", phase="main" → false</idea>
+      <idea ac="7-2.4">canBuild() - mode="playing", phase="main" → true</idea>
+      <idea ac="7-2.4">canBuild() - mode="playing", phase="roll" → false</idea>
+      <idea ac="7-2.4">canRoll() - mode="finished" → false</idea>
+      <idea ac="7-2.5">checkVictory() - 승자 없음 → nil, mode 유지</idea>
+      <idea ac="7-2.5">checkVictory() - 10점 달성 → winner 설정, mode="finished"</idea>
+    </ideas>
+  </tests>
+</story-context>

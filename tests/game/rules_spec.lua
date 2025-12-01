@@ -27,8 +27,17 @@ describe("Rules", function()
     local players
 
     before_each(function()
-      -- 표준 보드 생성
-      board = Board.newStandard()
+      -- 고정된 테스트 보드 생성 (결정적인 타일 배치)
+      -- 각 테스트에서 필요한 타일만 설정
+      board = Board.newForTesting({
+        {q = 0, r = 0, terrain = "forest", number = 8},    -- wood
+        {q = 1, r = 0, terrain = "hills", number = 6},     -- brick
+        {q = -1, r = 0, terrain = "pasture", number = 9},  -- wool
+        {q = 0, r = 1, terrain = "fields", number = 5},    -- grain
+        {q = 1, r = -1, terrain = "mountains", number = 4}, -- ore
+        {q = -1, r = 1, terrain = "forest", number = 4},   -- wood (숫자 4 중복)
+        {q = 0, r = -1, terrain = "desert", number = nil}, -- desert (숫자 없음)
+      })
       -- 4명의 플레이어 생성
       players = {
         Player(1),
@@ -39,48 +48,31 @@ describe("Rules", function()
     end)
 
     it("should give 1 resource for settlement adjacent to matching tile", function()
-      -- 숫자 8인 타일 찾기
-      local tiles = board:getTilesWithNumber(8)
-      assert.is_true(#tiles > 0, "Should have at least one tile with number 8")
+      -- 숫자 8인 타일 (forest, q=0, r=0)
+      board:placeSettlement(1, 0, 0, "N")
 
-      local tile = tiles[1]
-      -- 타일의 N 정점에 정착지 배치
-      board:placeSettlement(1, tile.q, tile.r, "N")
+      local initialAmount = players[1]:getResource("wood")
 
-      -- 초기 자원 확인
-      local resource = Constants.TERRAIN_RESOURCE[tile.terrain]
-      if resource then
-        local initialAmount = players[1]:getResource(resource)
+      -- 자원 분배 실행
+      Rules.distributeResources(board, players, 8)
 
-        -- 자원 분배 실행
-        Rules.distributeResources(board, players, 8)
-
-        -- 정착지는 1개 자원 획득
-        assert.are.equal(initialAmount + 1, players[1]:getResource(resource),
-          "Settlement should receive 1 " .. resource)
-      end
+      -- 정착지는 1개 자원 획득
+      assert.are.equal(initialAmount + 1, players[1]:getResource("wood"),
+        "Settlement should receive 1 wood")
     end)
 
     it("should give 2 resources for city adjacent to matching tile", function()
-      -- 숫자 6인 타일 찾기
-      local tiles = board:getTilesWithNumber(6)
-      assert.is_true(#tiles > 0, "Should have at least one tile with number 6")
+      -- 숫자 6인 타일 (hills, q=1, r=0)
+      board:placeSettlement(1, 1, 0, "N")
+      board:upgradeToCity(1, 0, "N")
 
-      local tile = tiles[1]
-      -- 먼저 정착지 배치 후 도시로 업그레이드
-      board:placeSettlement(1, tile.q, tile.r, "N")
-      board:upgradeToCity(tile.q, tile.r, "N")
+      local initialAmount = players[1]:getResource("brick")
 
-      local resource = Constants.TERRAIN_RESOURCE[tile.terrain]
-      if resource then
-        local initialAmount = players[1]:getResource(resource)
+      Rules.distributeResources(board, players, 6)
 
-        Rules.distributeResources(board, players, 6)
-
-        -- 도시는 2개 자원 획득
-        assert.are.equal(initialAmount + 2, players[1]:getResource(resource),
-          "City should receive 2 " .. resource)
-      end
+      -- 도시는 2개 자원 획득
+      assert.are.equal(initialAmount + 2, players[1]:getResource("brick"),
+        "City should receive 2 brick")
     end)
 
     it("should not include desert in tiles with any number", function()
@@ -101,72 +93,51 @@ describe("Rules", function()
     end)
 
     it("should distribute to multiple players independently", function()
-      -- 같은 숫자의 타일 찾기
-      local tiles = board:getTilesWithNumber(9)
-      if #tiles > 0 then
-        local tile = tiles[1]
+      -- 숫자 9인 타일 (pasture, q=-1, r=0) - 이 타일만 숫자 9를 가짐
+      -- 두 플레이어가 같은 타일에 인접한 다른 정점에 정착지 배치
+      board:placeSettlement(1, -1, 0, "N")
+      board:placeSettlement(2, -1, 0, "S")
 
-        -- 두 플레이어가 같은 타일에 인접한 다른 정점에 정착지 배치
-        board:placeSettlement(1, tile.q, tile.r, "N")
-        board:placeSettlement(2, tile.q, tile.r, "S")
+      local initial1 = players[1]:getResource("sheep")
+      local initial2 = players[2]:getResource("sheep")
 
-        local resource = Constants.TERRAIN_RESOURCE[tile.terrain]
-        if resource then
-          local initial1 = players[1]:getResource(resource)
-          local initial2 = players[2]:getResource(resource)
+      Rules.distributeResources(board, players, 9)
 
-          Rules.distributeResources(board, players, 9)
-
-          -- 각 플레이어 독립적으로 자원 획득
-          assert.are.equal(initial1 + 1, players[1]:getResource(resource))
-          assert.are.equal(initial2 + 1, players[2]:getResource(resource))
-        end
-      end
+      -- 각 플레이어가 정확히 1개씩 자원 획득
+      assert.are.equal(initial1 + 1, players[1]:getResource("sheep"),
+        "Player 1 should receive exactly 1 sheep")
+      assert.are.equal(initial2 + 1, players[2]:getResource("sheep"),
+        "Player 2 should receive exactly 1 sheep")
     end)
 
     it("should not distribute for non-matching numbers", function()
-      local tiles = board:getTilesWithNumber(5)
-      if #tiles > 0 then
-        local tile = tiles[1]
-        board:placeSettlement(1, tile.q, tile.r, "N")
+      -- 숫자 5인 타일 (fields, q=0, r=1)에 정착지 배치
+      board:placeSettlement(1, 0, 1, "N")
 
-        local resource = Constants.TERRAIN_RESOURCE[tile.terrain]
-        if resource then
-          local initialAmount = players[1]:getResource(resource)
+      local initialAmount = players[1]:getResource("wheat")
 
-          -- 다른 숫자로 굴림
-          Rules.distributeResources(board, players, 10)
+      -- 다른 숫자로 굴림 (10)
+      Rules.distributeResources(board, players, 10)
 
-          -- 자원 변화 없음
-          assert.are.equal(initialAmount, players[1]:getResource(resource))
-        end
-      end
+      -- 자원 변화 없음
+      assert.are.equal(initialAmount, players[1]:getResource("wheat"))
     end)
 
     it("should handle multiple tiles with same number", function()
-      -- 같은 숫자의 타일이 여러 개인 경우
-      local tiles = board:getTilesWithNumber(4)
-      if #tiles >= 2 then
-        -- 두 타일에 각각 정착지 배치
-        board:placeSettlement(1, tiles[1].q, tiles[1].r, "N")
-        board:placeSettlement(1, tiles[2].q, tiles[2].r, "N")
+      -- 같은 숫자 4를 가진 두 타일: mountains(q=1,r=-1)와 forest(q=-1,r=1)
+      board:placeSettlement(1, 1, -1, "N")  -- ore 타일
+      board:placeSettlement(1, -1, 1, "N")  -- wood 타일
 
-        local resource1 = Constants.TERRAIN_RESOURCE[tiles[1].terrain]
-        local resource2 = Constants.TERRAIN_RESOURCE[tiles[2].terrain]
+      local initialOre = players[1]:getResource("ore")
+      local initialWood = players[1]:getResource("wood")
 
-        local initial1 = resource1 and players[1]:getResource(resource1) or 0
-        local initial2 = resource2 and players[1]:getResource(resource2) or 0
+      Rules.distributeResources(board, players, 4)
 
-        Rules.distributeResources(board, players, 4)
-
-        -- 각 타일에서 자원 획득
-        if resource1 then
-          assert.is_true(players[1]:getResource(resource1) > initial1)
-        end
-        if resource2 and resource2 ~= resource1 then
-          assert.is_true(players[1]:getResource(resource2) > initial2)
-        end
-      end
+      -- 각 타일에서 자원 획득
+      assert.are.equal(initialOre + 1, players[1]:getResource("ore"),
+        "Should receive 1 ore from mountains tile")
+      assert.are.equal(initialWood + 1, players[1]:getResource("wood"),
+        "Should receive 1 wood from forest tile")
     end)
   end)
 
