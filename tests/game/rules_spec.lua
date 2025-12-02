@@ -240,7 +240,8 @@ describe("Rules", function()
       board:placeSettlement(1, 0, 0, "N")
       board:placeRoad(2, -1, 0, "E")
 
-      local canBuild, err = Rules.canBuildSettlement(board, 2, {q = -1, r = 0, dir = "S"}, false)
+      -- (0,-1,S)는 (0,0,N)의 실제 인접 정점 (BUG-004 수정 후)
+      local canBuild, err = Rules.canBuildSettlement(board, 2, {q = 0, r = -1, dir = "S"}, false)
       assert.is_false(canBuild)
       assert.are.equal("Distance rule violated", err)
     end)
@@ -270,7 +271,8 @@ describe("Rules", function()
     it("should still enforce distance rule during initial placement", function()
       board:placeSettlement(1, 0, 0, "N")
 
-      local canBuild, err = Rules.canBuildSettlement(board, 2, {q = -1, r = 0, dir = "S"}, true)
+      -- (0,-1,S)는 (0,0,N)의 실제 인접 정점 (BUG-004 수정 후)
+      local canBuild, err = Rules.canBuildSettlement(board, 2, {q = 0, r = -1, dir = "S"}, true)
       assert.is_false(canBuild)
       assert.are.equal("Distance rule violated", err)
     end)
@@ -468,10 +470,10 @@ describe("Rules", function()
 
       before_each(function()
         board = Board.new()
-        -- N 정점 인접 타일: (0,0), (0,-1), (-1,0)
+        -- N 정점 인접 타일: (0,0), (0,-1), (1,-1) - BUG-001 좌표 체계 수정 후
         board.tiles["0,0"] = {q = 0, r = 0, terrain = "forest", number = 8}
         board.tiles["0,-1"] = {q = 0, r = -1, terrain = "hills", number = 6}
-        board.tiles["-1,0"] = {q = -1, r = 0, terrain = "pasture", number = 5}
+        board.tiles["1,-1"] = {q = 1, r = -1, terrain = "pasture", number = 5}
       end)
 
       it("should return resources from adjacent tiles", function()
@@ -496,7 +498,7 @@ describe("Rules", function()
       it("should handle edge of board (missing tiles)", function()
         -- 인접 타일 중 일부가 없는 경우
         board.tiles["0,-1"] = nil
-        board.tiles["-1,0"] = nil
+        board.tiles["1,-1"] = nil
 
         local resources = Rules.getInitialResources(board, {q = 0, r = 0, dir = "N"})
 

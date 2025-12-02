@@ -76,7 +76,7 @@ describe("Vertex", function()
 
     it("should return correct hexes for (0,0,N)", function()
       local hexes = Vertex.getAdjacentHexes(0, 0, "N")
-      -- N 정점 인접 헥스: 자신, NE 이웃, NW 이웃
+      -- N 정점 인접 헥스: 자신(0,0), 북서쪽(0,-1), 북동쪽(1,-1)
       local found = {[0] = {}, [1] = {}, [-1] = {}}
       for _, h in ipairs(hexes) do
         found[h.q] = found[h.q] or {}
@@ -84,7 +84,7 @@ describe("Vertex", function()
       end
       assert.is_true(found[0][0] or false, "should include (0,0)")
       assert.is_true(found[0][-1] or false, "should include (0,-1)")
-      assert.is_true(found[-1][0] or false, "should include (-1,0)")
+      assert.is_true(found[1][-1] or false, "should include (1,-1)")
     end)
   end)
 
@@ -282,6 +282,68 @@ describe("Vertex", function()
       assert.equals(0, vertices[6].q)
       assert.equals(-1, vertices[6].r)
       assert.equals("S", vertices[6].dir)
+    end)
+  end)
+
+  -- BUG-001/BUG-004 수정 후 좌표 시스템 교차 검증
+  describe("coordinate system cross-validation", function()
+    local Edge = require("src.game.edge")
+
+    local testVertices = {
+      {q=0, r=0, dir='N'}, {q=0, r=0, dir='S'},
+      {q=1, r=-1, dir='N'}, {q=-1, r=1, dir='S'}
+    }
+
+    it("getHexVertices and getAdjacentHexes should be consistent", function()
+      for _, v in ipairs(testVertices) do
+        local adjHexes = Vertex.getAdjacentHexes(v.q, v.r, v.dir)
+        for _, h in ipairs(adjHexes) do
+          local hexVerts = Vertex.getHexVertices(h.q, h.r)
+          local found = false
+          for _, hv in ipairs(hexVerts) do
+            if hv.q == v.q and hv.r == v.r and hv.dir == v.dir then
+              found = true
+              break
+            end
+          end
+          assert.is_true(found, string.format(
+            "Vertex(%d,%d,%s) should be in Hex(%d,%d)'s vertices",
+            v.q, v.r, v.dir, h.q, h.r))
+        end
+      end
+    end)
+
+    it("getAdjacentEdges and Edge.getVertices should be consistent", function()
+      for _, v in ipairs(testVertices) do
+        local adjEdges = Vertex.getAdjacentEdges(v.q, v.r, v.dir)
+        for _, e in ipairs(adjEdges) do
+          local v1, v2 = Edge.getVertices(e.q, e.r, e.dir)
+          local hasVertex = (v1.q == v.q and v1.r == v.r and v1.dir == v.dir) or
+                            (v2.q == v.q and v2.r == v.r and v2.dir == v.dir)
+          assert.is_true(hasVertex, string.format(
+            "Edge(%d,%d,%s) should have Vertex(%d,%d,%s)",
+            e.q, e.r, e.dir, v.q, v.r, v.dir))
+        end
+      end
+    end)
+
+    it("getAdjacentVertices should be bidirectional", function()
+      for _, v in ipairs(testVertices) do
+        local adjVerts = Vertex.getAdjacentVertices(v.q, v.r, v.dir)
+        for _, av in ipairs(adjVerts) do
+          local reverseAdj = Vertex.getAdjacentVertices(av.q, av.r, av.dir)
+          local found = false
+          for _, rv in ipairs(reverseAdj) do
+            if rv.q == v.q and rv.r == v.r and rv.dir == v.dir then
+              found = true
+              break
+            end
+          end
+          assert.is_true(found, string.format(
+            "Vertex(%d,%d,%s) adjacent to (%d,%d,%s) should be bidirectional",
+            v.q, v.r, v.dir, av.q, av.r, av.dir))
+        end
+      end
     end)
   end)
 

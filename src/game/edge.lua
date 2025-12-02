@@ -94,30 +94,36 @@ end
 -- @return table 인접 변 목록 (정규화됨)
 ---
 function Edge.getAdjacentEdges(q, r, dir)
-  -- 먼저 정규화
+  -- Edge의 양 끝 정점에서 나가는 edge들 (자신 제외)
+  -- BUG-001 좌표 체계와 일치하도록 Vertex.getAdjacentEdges 기반으로 계산
   local nq, nr, ndir = Edge.normalize(q, r, dir)
-
+  local v1, v2 = Edge.getVertices(nq, nr, ndir)
+  
   local edges = {}
-  if ndir == "NE" then
-    -- NE 변에 인접한 4개 변
-    edges[1] = Edge.normalizeEdge(nq, nr, "E")
-    edges[2] = Edge.normalizeEdge(nq, nr - 1, "E")
-    edges[3] = Edge.normalizeEdge(nq, nr - 1, "SE")
-    edges[4] = Edge.normalizeEdge(nq - 1, nr, "E")
-  elseif ndir == "E" then
-    -- E 변에 인접한 4개 변
-    edges[1] = Edge.normalizeEdge(nq, nr, "NE")
-    edges[2] = Edge.normalizeEdge(nq, nr, "SE")
-    edges[3] = Edge.normalizeEdge(nq + 1, nr - 1, "SE")
-    edges[4] = Edge.normalizeEdge(nq + 1, nr, "NE")
-  elseif ndir == "SE" then
-    -- SE 변에 인접한 4개 변
-    edges[1] = Edge.normalizeEdge(nq, nr, "E")
-    edges[2] = Edge.normalizeEdge(nq, nr + 1, "E")
-    edges[3] = Edge.normalizeEdge(nq, nr + 1, "NE")
-    edges[4] = Edge.normalizeEdge(nq + 1, nr, "E")
+  local seen = {}
+  local selfKey = Edge.toString(nq, nr, ndir)
+  seen[selfKey] = true
+  
+  -- v1에서 나가는 edge들
+  local v1Edges = Vertex.getAdjacentEdges(v1.q, v1.r, v1.dir)
+  for _, e in ipairs(v1Edges) do
+    local key = Edge.toString(e.q, e.r, e.dir)
+    if not seen[key] then
+      seen[key] = true
+      edges[#edges + 1] = e
+    end
   end
-
+  
+  -- v2에서 나가는 edge들
+  local v2Edges = Vertex.getAdjacentEdges(v2.q, v2.r, v2.dir)
+  for _, e in ipairs(v2Edges) do
+    local key = Edge.toString(e.q, e.r, e.dir)
+    if not seen[key] then
+      seen[key] = true
+      edges[#edges + 1] = e
+    end
+  end
+  
   return edges
 end
 

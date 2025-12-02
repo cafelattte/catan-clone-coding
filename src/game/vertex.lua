@@ -73,18 +73,18 @@ end
 -- @return table 인접 헥스 목록 {{q, r}, ...}
 ---
 function Vertex.getAdjacentHexes(q, r, dir)
+  -- 정점을 공유하는 3개의 헥스 반환 (BUG-001 좌표 체계와 일치하도록 수정)
   local hexes = {}
   if dir == "N" then
-    -- N 정점 인접 헥스: 자신, NW 이웃(0,-1), W 이웃 기준에서의...
-    -- 실제로는: (q, r), (q, r-1), (q-1, r)
+    -- N 정점 인접 헥스: 자신, 북서쪽(0,-1), 북동쪽(1,-1)
     hexes[1] = {q = q, r = r}
     hexes[2] = {q = q, r = r - 1}
-    hexes[3] = {q = q - 1, r = r}
+    hexes[3] = {q = q + 1, r = r - 1}
   else -- S
-    -- S 정점 인접 헥스: (q, r), (q, r+1), (q+1, r)
+    -- S 정점 인접 헥스: 자신, 남동쪽(0,1), 남서쪽(-1,1)
     hexes[1] = {q = q, r = r}
     hexes[2] = {q = q, r = r + 1}
-    hexes[3] = {q = q + 1, r = r}
+    hexes[3] = {q = q - 1, r = r + 1}
   end
   return hexes
 end
@@ -97,19 +97,22 @@ end
 -- @return table 인접 정점 목록 (정규화됨)
 ---
 function Vertex.getAdjacentVertices(q, r, dir)
+  -- Edge를 통해 인접 정점 계산 (BUG-001 수정 후 좌표 체계와 일치하도록)
+  -- 각 정점에서 3개의 edge가 나가고, 각 edge의 반대쪽 정점이 인접 정점
+  local Edge = require("src.game.edge")
   local vertices = {}
-  if dir == "N" then
-    -- N 정점의 3개 인접 정점
-    -- 위쪽 정점 주변의 3개 변을 따라 연결된 정점
-    vertices[1] = {q = q - 1, r = r, dir = "S"}
-    vertices[2] = {q = q, r = r - 1, dir = "S"}
-    vertices[3] = {q = q, r = r, dir = "S"}
-  else -- S
-    -- S 정점의 3개 인접 정점
-    vertices[1] = {q = q, r = r, dir = "N"}
-    vertices[2] = {q = q + 1, r = r, dir = "N"}
-    vertices[3] = {q = q, r = r + 1, dir = "N"}
+  local edges = Vertex.getAdjacentEdges(q, r, dir)
+  
+  for i, edge in ipairs(edges) do
+    local v1, v2 = Edge.getVertices(edge.q, edge.r, edge.dir)
+    -- 현재 정점이 아닌 정점이 인접 정점
+    if v1.q == q and v1.r == r and v1.dir == dir then
+      vertices[i] = {q = v2.q, r = v2.r, dir = v2.dir}
+    else
+      vertices[i] = {q = v1.q, r = v1.r, dir = v1.dir}
+    end
   end
+  
   return vertices
 end
 

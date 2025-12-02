@@ -275,7 +275,8 @@ describe("Actions", function()
       local game = createGameState()
       game.board:placeSettlement(2, 0, 0, "N")
 
-      local success, err = Actions.buildSettlementFree(game, 1, {q = -1, r = 0, dir = "S"})
+      -- (0,-1,S)는 (0,0,N)의 실제 인접 정점 (BUG-004 수정 후)
+      local success, err = Actions.buildSettlementFree(game, 1, {q = 0, r = -1, dir = "S"})
 
       assert.is_false(success)
       assert.are.equal("Distance rule violated", err)
