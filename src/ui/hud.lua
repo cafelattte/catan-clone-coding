@@ -28,7 +28,7 @@ local RESOURCE_NAMES = {
 local CONFIG = {
   padding = 10,
   panelHeight = 60,
-  scoreWidth = 120,
+  scoreWidth = 210,  -- 실제 점수 패널 너비와 일치
   turnInfoHeight = 30,
   diceWidth = 100,
 }
@@ -257,10 +257,12 @@ function HUD.draw(gameState, screenWidth, screenHeight)
   local resourcePanelY = screenHeight - resourcePanelHeight - CONFIG.padding
   HUD.drawResourcePanel(currentPlayer, resourcePanelX, resourcePanelY, resourcePanelWidth, resourcePanelHeight)
 
-  -- 점수 패널 (우측 상단)
-  local scorePanelX = screenWidth - CONFIG.scoreWidth - CONFIG.padding
-  local scorePanelY = CONFIG.padding
-  HUD.drawScorePanel(players, currentPlayerId, scorePanelX, scorePanelY, gameState.adminMode)
+  -- 점수 패널 (우측 상단) - Setup 모드에서는 숨김
+  if not gameState.isSetup then
+    local scorePanelX = screenWidth - CONFIG.scoreWidth - CONFIG.padding
+    local scorePanelY = CONFIG.padding
+    HUD.drawScorePanel(players, currentPlayerId, scorePanelX, scorePanelY, gameState.adminMode)
+  end
 
   -- 턴 정보 (상단 중앙)
   local turnInfoX = screenWidth / 2

@@ -108,7 +108,7 @@ end
 ---
 local function initActionButtons(screenWidth)
   local buttonX = screenWidth - BUTTON_WIDTH - 20
-  local startY = 100
+  local startY = 320  -- 점수 패널 아래로 이동 (점수 패널 높이 약 280)
 
   actionButtons = {
     {id = "roll", label = "Roll Dice", x = buttonX, y = startY, w = BUTTON_WIDTH, h = BUTTON_HEIGHT},
@@ -423,7 +423,7 @@ local function drawResourceGains()
   local lineHeight = font:getHeight() + 2
   local padding = 10
   local boxX = 10
-  local boxY = 60
+  local boxY = 50  -- 주사위 결과 아래
 
   -- 획득 정보 문자열 생성
   local lines = {"Resources Gained:"}
@@ -814,6 +814,7 @@ function game:draw()
     },
     diceResult = gameState.diceResult,
     adminMode = adminMode,
+    isSetup = gameState:isSetup(),  -- Setup 모드 플래그
   }
 
   for i, player in ipairs(gameState.players) do
@@ -861,7 +862,7 @@ end
 
 function game:keypressed(key)
   -- F1: Admin 모드 토글 (AC 8-1.1)
-  if key == "f1" then
+  if key == "1" then
     adminMode = not adminMode
     print("Admin mode: " .. (adminMode and "ON" or "OFF"))
     return
