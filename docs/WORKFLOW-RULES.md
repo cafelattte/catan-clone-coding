@@ -45,7 +45,31 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - BMAD 설정 파일 변경
 - 초기 프로젝트 설정
 
+## 버그 관리
+
+버그는 Epic/Story 체계와 별도로 `docs/bugs.md`에서 관리한다.
+
+**프로세스**:
+1. 버그 발견 시 `docs/bugs.md`의 **Open** 섹션에 추가
+2. 수정 시작 시 **In Progress**로 이동
+3. 수정 완료 후 **Fixed**로 이동 (커밋 해시 포함)
+
+**커밋 메시지 형식**:
+```
+fix: [버그 설명]
+
+- 수정 내용 bullet points
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**버그 vs Story 구분**:
+- **버그**: 기존 기능이 의도대로 동작하지 않음 → `docs/bugs.md`
+- **새 기능/개선**: 새로운 요구사항 → Story 생성
+
 ---
 
 _Created: 2025-11-30_
-_Updated: 2025-12-01_
+_Updated: 2025-12-02_
