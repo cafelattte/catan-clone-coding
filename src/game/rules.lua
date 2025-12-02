@@ -193,20 +193,16 @@ function Rules.getValidSettlementLocations(board, playerId, isInitialPlacement)
   local seen = {}
 
   if isInitialPlacement then
-    -- 초기 배치: 보드의 모든 타일 정점 중 거리 규칙 만족하는 것들
+    -- 초기 배치: 보드의 모든 타일의 6개 정점 중 거리 규칙 만족하는 것들
     for _, tile in pairs(board.tiles) do
-      local vertices = {
-        {q = tile.q, r = tile.r, dir = "N"},
-        {q = tile.q, r = tile.r, dir = "S"}
-      }
+      local vertices = Vertex.getHexVertices(tile.q, tile.r)
       for _, v in ipairs(vertices) do
-        local nq, nr, ndir = Vertex.normalize(v.q, v.r, v.dir)
-        local key = Vertex.toString(nq, nr, ndir)
+        local key = Vertex.toString(v.q, v.r, v.dir)
         if not seen[key] then
           seen[key] = true
-          local canBuild, _ = Rules.canBuildSettlement(board, playerId, {q = nq, r = nr, dir = ndir}, true)
+          local canBuild, _ = Rules.canBuildSettlement(board, playerId, v, true)
           if canBuild then
-            validLocations[#validLocations + 1] = {q = nq, r = nr, dir = ndir}
+            validLocations[#validLocations + 1] = {q = v.q, r = v.r, dir = v.dir}
           end
         end
       end
