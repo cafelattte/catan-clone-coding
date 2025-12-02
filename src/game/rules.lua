@@ -145,6 +145,13 @@ function Rules.canBuildRoad(board, playerId, edge)
   end
 
   if not isConnected then
+    -- BUG-006 디버그 로그: 재현 시 좌표 정보 확인용
+    print(string.format("[DEBUG BUG-006] canBuildRoad FAILED for player %d", playerId))
+    print(string.format("  Edge: (%d, %d, %s)", q, r, dir))
+    print(string.format("  v1: (%d, %d, %s) -> building: %s", v1.q, v1.r, v1.dir,
+      building1 and string.format("player %d", building1.player) or "nil"))
+    print(string.format("  v2: (%d, %d, %s) -> building: %s", v2.q, v2.r, v2.dir,
+      building2 and string.format("player %d", building2.player) or "nil"))
     return false, "Not connected to building or road"
   end
 

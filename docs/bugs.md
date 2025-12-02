@@ -2,6 +2,14 @@
 
 ## Open
 
+- [ ] **BUG-006**: Setup에서 간헐적으로 도로 배치 실패 - "Not connected to building or road"
+  - 증상: Setup road phase에서 유효한 위치 클릭 시 간헐적으로 실패
+  - 추정 원인:
+    1. `Edge.getVertices()`가 특정 방향에서 잘못된 좌표 반환
+    2. 정착지 좌표와 변 끝점 좌표 정규화 불일치
+  - 관련 파일: `src/game/rules.lua` (canBuildRoad), `src/game/edge.lua` (getVertices)
+  - 재현 조건: 미확인 (간헐적)
+
 ## In Progress
 
 ## Fixed
