@@ -65,6 +65,10 @@ local actionButtons = {}
 -- 버튼 호버 상태 (Story 7-5)
 local hoverButtonIndex = nil
 
+-- Forward declarations (BUG-005 fix: local 함수 순서 문제 해결)
+local getSetupRoadLocations
+local updateValidLocations
+
 ---
 -- 점이 사각형 내부에 있는지 확인
 -- @param px number 점 x 좌표
@@ -335,7 +339,7 @@ end
 -- @param settlement table {q, r, dir} 마지막 배치 정착지
 -- @return table 유효한 변 목록
 ---
-local function getSetupRoadLocations(settlement)
+getSetupRoadLocations = function(settlement)
   local Vertex = require("src.game.vertex")
   local Edge = require("src.game.edge")
   local validEdges = {}
@@ -355,7 +359,7 @@ end
 -- 선택 모드에 따른 유효 위치 계산 (Story 7-6 수정)
 -- @param mode string 선택 모드
 ---
-local function updateValidLocations(mode)
+updateValidLocations = function(mode)
   -- Setup 모드 처리 (Story 7-6)
   if gameState and gameState:isSetup() then
     local setupPhase = gameState:getSetupPhase()

@@ -2,11 +2,14 @@
 
 ## Open
 
-- [ ] **BUG-005**: 자원 획득 후 Road 건설 버튼 클릭 시 크래시
-
 ## In Progress
 
 ## Fixed
+
+- [x] **BUG-005**: 자원 획득 후 Road 건설 버튼 클릭 시 크래시
+  - 원인: `handleButtonClick`(276줄)이 `updateValidLocations`(362줄)를 호출하는데, 둘 다 `local function`으로 정의되어 Lua의 forward reference 문제 발생
+  - 수정: 파일 상단에 forward declaration 추가 (`local getSetupRoadLocations`, `local updateValidLocations`)
+  - 관련 파일: `src/scenes/game.lua`
 
 - [x] **BUG-004**: 건설 가능 위치 검증 함수 결함 - 초기 배치에서 인접 vertex에도 건설 가능 (거리 규칙 미적용)
   - 원인: BUG-001 좌표 체계 변경의 여파로 여러 함수가 불일치
