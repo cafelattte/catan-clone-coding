@@ -3,8 +3,8 @@
 Love2D로 구현한 카탄 클론 코딩 프로젝트
 
 ## Demo
+https://github.com/user-attachments/assets/20eecfc6-f88d-45e8-a899-6e7f52b28c76
 
-https://github.com/user-attachments/assets/8a142610-b04a-4c21-8e22-bee08e57ca98
 
 ## 소개
 
