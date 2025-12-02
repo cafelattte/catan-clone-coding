@@ -548,6 +548,54 @@ AC 7-4.4: Given 게임 종료 씬
           Then 게임 종료
 ```
 
+### AC 7-5: 게임 플레이 통합
+
+```
+AC 7-5.1: Given game.lua 게임 씬
+          When "Roll Dice" 버튼 클릭
+          Then gameState:rollDice() 호출
+          And 주사위 결과 HUD에 표시
+          And roll 페이즈가 아니면 버튼 비활성화
+
+AC 7-5.2: Given game.lua 게임 씬
+          When "Settlement" 버튼 클릭
+          Then settlement 선택 모드 진입
+          And 유효한 정점 하이라이트
+
+AC 7-5.3: Given settlement 선택 모드
+          When 유효한 정점 클릭
+          Then Actions.buildSettlement() 실행
+          And 건물 렌더링 업데이트
+          And 승리 체크
+
+AC 7-5.4: Given game.lua 게임 씬
+          When "City" 버튼 클릭
+          Then city 선택 모드 진입
+          And 업그레이드 가능한 정착지 하이라이트
+
+AC 7-5.5: Given city 선택 모드
+          When 유효한 정점 클릭 (기존 정착지)
+          Then Actions.buildCity() 실행
+          And 건물 렌더링 업데이트
+          And 승리 체크
+
+AC 7-5.6: Given game.lua 게임 씬
+          When "Road" 버튼 클릭
+          Then road 선택 모드 진입
+          And 유효한 변 하이라이트
+
+AC 7-5.7: Given road 선택 모드
+          When 유효한 변 클릭
+          Then Actions.buildRoad() 실행
+          And 건물 렌더링 업데이트
+
+AC 7-5.8: Given main 페이즈
+          When "End Turn" 버튼 클릭
+          Then gameState:endTurn() 호출
+          And 다음 플레이어로 전환
+          And roll 페이즈가 아니면 버튼 비활성화
+```
+
 ---
 
 ## Traceability Mapping
@@ -577,6 +625,14 @@ AC 7-4.4: Given 게임 종료 씬
 | AC 7-4.2 | Scenes | game_over:draw() | 수동 테스트 |
 | AC 7-4.3 | Scenes | Gamestate.switch(menu) | 수동 테스트 |
 | AC 7-4.4 | Scenes | love.event.quit() | 수동 테스트 |
+| AC 7-5.1 | Scenes | Roll Dice 버튼 + rollDice | 수동 테스트 |
+| AC 7-5.2 | Scenes | Settlement 버튼 + 선택 모드 | 수동 테스트 |
+| AC 7-5.3 | Scenes | mousepressed + Actions.buildSettlement | 수동 테스트 |
+| AC 7-5.4 | Scenes | City 버튼 + 선택 모드 | 수동 테스트 |
+| AC 7-5.5 | Scenes | mousepressed + Actions.buildCity | 수동 테스트 |
+| AC 7-5.6 | Scenes | Road 버튼 + 선택 모드 | 수동 테스트 |
+| AC 7-5.7 | Scenes | mousepressed + Actions.buildRoad | 수동 테스트 |
+| AC 7-5.8 | Scenes | End Turn 버튼 + endTurn | 수동 테스트 |
 
 ---
 

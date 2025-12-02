@@ -1185,6 +1185,58 @@ And roll 페이즈가 아니면 버튼 비활성화
 
 ---
 
+### Story 7.6: 초기 배치 UI
+
+**As a** 플레이어,
+**I want** 게임 시작 시 초기 정착지와 도로를 배치할 수 있어,
+**So that** 카탄 규칙에 맞는 완전한 게임 플레이 가능.
+
+**Acceptance Criteria:**
+
+```
+Given 새 게임 시작
+When 게임 씬 진입
+Then mode = "setup", 첫 번째 플레이어 초기 배치 시작
+
+Given setup 모드
+When 현재 플레이어 차례
+Then "Place Settlement" 안내 표시
+And 유효한 정점 하이라이트 (distance rule 무시)
+
+Given setup 모드, settlement 배치
+When 유효한 정점 클릭
+Then Actions.buildSettlementFree() 실행
+And "Place Road" 안내 표시
+
+Given setup 모드, road 배치
+When 방금 배치한 정착지에 연결된 유효한 변 클릭
+Then Actions.buildRoadFree() 실행
+And 다음 플레이어로 진행 (Snake Draft)
+
+Given setup Round 1 완료 (1→2→3→4)
+When 마지막 플레이어 배치 완료
+Then Round 2 시작 (4→3→2→1 역순)
+
+Given setup Round 2, 정착지 배치
+When 두 번째 정착지 배치 완료
+Then 인접 타일 자원 각 1개씩 지급
+
+Given setup Round 2, 플레이어 1 배치 완료
+When 모든 초기 배치 완료
+Then mode = "playing", 플레이어 1 턴 시작
+```
+
+**Prerequisites:** Story 7.5, Story 5.5
+
+**Technical Notes:**
+- GameState.setup 구조체 활용 (이미 정의됨)
+- Snake Draft: Round 1 (1→2→3→4), Round 2 (4→3→2→1)
+- Actions.buildSettlementFree(), Actions.buildRoadFree() 활용
+- 초기 배치 시 distance rule 무시 (isInitialPlacement = true)
+- Round 2 정착지 배치 후 인접 타일 자원 지급
+
+---
+
 ## FR Coverage Matrix (최종 검증)
 
 | FR | Epic | Stories | 상태 |
