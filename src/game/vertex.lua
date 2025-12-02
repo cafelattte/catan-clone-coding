@@ -32,7 +32,10 @@ end
 -- @return string "q,r,dir" 형식
 ---
 function Vertex.toString(q, r, dir)
-  return q .. "," .. r .. "," .. dir
+  -- BUG-006 fix: 좌표를 정수로 변환하고, -0을 0으로 변환하여 key 불일치 방지
+  -- IEEE 754에서 -0과 0은 같지만 문자열 변환 시 "-0" vs "0"로 다름
+  -- math.floor로 정수화 후 string.format("%d")로 -0을 "0"으로 변환
+  return string.format("%d,%d,%s", math.floor(q), math.floor(r), dir)
 end
 
 ---

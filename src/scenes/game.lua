@@ -1042,14 +1042,7 @@ local function handleSetupClick(x, y)
 
         return true
       else
-        -- BUG-006 디버그 로그
         print("Setup: Failed to place road - " .. (err or "Unknown error"))
-        if lastPlacedSettlement then
-          print(string.format("  lastPlacedSettlement: (%d, %d, %s)",
-            lastPlacedSettlement.q, lastPlacedSettlement.r, lastPlacedSettlement.dir))
-        else
-          print("  lastPlacedSettlement: nil (BUG! should exist during road phase)")
-        end
       end
     end
   end

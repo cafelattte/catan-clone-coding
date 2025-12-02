@@ -45,6 +45,26 @@ describe("Vertex", function()
       assert.equals("1,-1,S", Vertex.toString(1, -1, "S"))
       assert.equals("-2,3,N", Vertex.toString(-2, 3, "N"))
     end)
+
+    -- BUG-006: 부동소수점 좌표도 정수로 변환되어야 함
+    it("should convert float coordinates to integer strings (BUG-006 fix)", function()
+      -- 0.0 → "0", not "0.0"
+      assert.equals("0,0,N", Vertex.toString(0.0, 0.0, "N"))
+      assert.equals("1,-1,S", Vertex.toString(1.0, -1.0, "S"))
+      assert.equals("-2,3,N", Vertex.toString(-2.0, 3.0, "N"))
+      -- 소수점 이하가 있는 경우 floor 처리
+      assert.equals("0,0,N", Vertex.toString(0.9, 0.1, "N"))
+      assert.equals("-1,-1,S", Vertex.toString(-0.1, -0.9, "S"))  -- floor(-0.1)=-1, floor(-0.9)=-1
+    end)
+
+    -- BUG-006: 음수 영(-0)도 "0"으로 변환되어야 함
+    it("should convert negative zero to '0' not '-0' (BUG-006 root cause)", function()
+      -- IEEE 754에서 -0과 0은 같지만 문자열 변환 시 다를 수 있음
+      local negZero = -0.0
+      assert.equals("0,0,N", Vertex.toString(negZero, 0, "N"))
+      assert.equals("0,0,N", Vertex.toString(0, negZero, "N"))
+      assert.equals("0,0,N", Vertex.toString(negZero, negZero, "N"))
+    end)
   end)
 
   describe("fromString", function()

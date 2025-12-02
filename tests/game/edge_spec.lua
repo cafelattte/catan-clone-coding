@@ -68,6 +68,13 @@ describe("Edge", function()
       assert.equals("1,-1,NE", Edge.toString(1, -1, "NE"))
       assert.equals("-2,3,SE", Edge.toString(-2, 3, "SE"))
     end)
+
+    -- BUG-006: 부동소수점 좌표도 정수로 변환되어야 함
+    it("should convert float coordinates to integer strings (BUG-006 fix)", function()
+      assert.equals("0,0,E", Edge.toString(0.0, 0.0, "E"))
+      assert.equals("1,-1,NE", Edge.toString(1.0, -1.0, "NE"))
+      assert.equals("-2,3,SE", Edge.toString(-2.0, 3.0, "SE"))
+    end)
   end)
 
   describe("fromString", function()

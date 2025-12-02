@@ -338,6 +338,96 @@ describe("Rules", function()
       assert.is_false(canBuild)
       assert.are.equal("Edge is outside board", err)
     end)
+
+    -- BUG-006: 인접 edge에서 building 조회 실패 버그 테스트
+    describe("BUG-006 regression", function()
+      before_each(function()
+        -- 충분한 타일을 가진 보드 생성 (edge가 보드 밖으로 판정되지 않도록)
+        board = Board.newForTesting({
+          {q = 0, r = 0, terrain = "forest", number = 8},
+          {q = 1, r = 0, terrain = "hills", number = 6},
+          {q = 0, r = -1, terrain = "pasture", number = 9},
+          {q = -1, r = 0, terrain = "fields", number = 5},
+          {q = 1, r = -1, terrain = "mountains", number = 4},
+          {q = -1, r = 1, terrain = "forest", number = 4},
+          {q = 0, r = 1, terrain = "hills", number = 3},
+          {q = 2, r = -2, terrain = "fields", number = 10},
+          {q = 2, r = -1, terrain = "pasture", number = 11},
+        })
+      end)
+
+      -- BUG-006: 사용자가 찾은 재현 케이스 (음수 영 -0 문제)
+      it("should allow Player 2 road at (0,-1,E) after setup sequence (exact repro)", function()
+        -- 재현 순서:
+        -- 1. Player 1: settlement at (2, -2, S)
+        -- 2. Player 1: road at (1, -1, E)
+        -- 3. Player 2: settlement at (0, 0, N)
+        -- 4. Player 2: road at (0, -1, E) -> SHOULD WORK
+
+        board:placeSettlement(1, 2, -2, "S")
+        board:placeRoad(1, 1, -1, "E")
+        board:placeSettlement(2, 0, 0, "N")
+
+        -- Edge (0,-1,E)의 v2가 (0,0,N)이어야 함
+        local v1, v2 = Edge.getVertices(0, -1, "E")
+        assert.equals(0, v2.q)
+        assert.equals(0, v2.r)
+        assert.equals("N", v2.dir)
+
+        -- Player 2의 settlement 조회 (핵심: -0 vs 0 키 불일치 버그)
+        local building = board:getBuilding(0, 0, "N")
+        assert.is_not_nil(building, "Player 2's settlement at (0,0,N) should exist")
+        assert.equals(2, building.player)
+
+        -- canBuildRoad 테스트
+        local canBuild, err = Rules.canBuildRoad(board, 2, {q = 0, r = -1, dir = "E"})
+        assert.is_true(canBuild, "Player 2 should be able to build road at (0,-1,E): " .. tostring(err))
+      end)
+
+      it("should find settlement at (0,0,N) when checking edge (0,-1,E)", function()
+        -- Edge (0,-1,E)의 v2가 (0,0,N)이므로 settlement에 인접함
+        board:placeSettlement(1, 0, 0, "N")
+
+        -- Edge.getVertices(0, -1, "E") 확인
+        local v1, v2 = Edge.getVertices(0, -1, "E")
+        assert.equals(1, v1.q)
+        assert.equals(-2, v1.r)
+        assert.equals("S", v1.dir)
+        assert.equals(0, v2.q)
+        assert.equals(0, v2.r)
+        assert.equals("N", v2.dir)
+
+        -- settlement 조회 확인
+        local building = board:getBuilding(0, 0, "N")
+        assert.is_not_nil(building, "Settlement at (0,0,N) should be found")
+        assert.equals(1, building.player)
+
+        -- v2 좌표로 직접 조회
+        local building2 = board:getBuilding(v2.q, v2.r, v2.dir)
+        assert.is_not_nil(building2, "Settlement should be found using v2 coordinates")
+
+        -- canBuildRoad 테스트
+        local canBuild, err = Rules.canBuildRoad(board, 1, {q = 0, r = -1, dir = "E"})
+        assert.is_true(canBuild, "Road at (0,-1,E) should be buildable: " .. tostring(err))
+      end)
+
+      it("should allow road at all 3 adjacent edges of settlement (0,0,N)", function()
+        board:placeSettlement(1, 0, 0, "N")
+
+        -- Vertex.getAdjacentEdges(0, 0, "N") 결과:
+        -- edges[1] = (0, 0, NE)
+        -- edges[2] = (0, -1, E)
+        -- edges[3] = (0, -1, SE)
+        local adjacentEdges = Vertex.getAdjacentEdges(0, 0, "N")
+
+        for i, edge in ipairs(adjacentEdges) do
+          local canBuild, err = Rules.canBuildRoad(board, 1, edge)
+          assert.is_true(canBuild,
+            string.format("Road at adjacent edge %d (%d,%d,%s) should be buildable: %s",
+              i, edge.q, edge.r, edge.dir, tostring(err)))
+        end
+      end)
+    end)
   end)
 
   describe("canBuildCity", function()
