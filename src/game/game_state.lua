@@ -32,20 +32,80 @@ function GameState:new(playerCount)
     round = 1,        -- 현재 라운드
   }
 
-  -- 게임 모드 (Story 7-2에서 활용)
-  self.mode = "playing"  -- "setup" | "playing" | "finished"
+  -- 게임 모드 (Story 7-6: 게임은 setup 모드로 시작)
+  self.mode = "setup"  -- "setup" | "playing" | "finished"
 
   -- Board 연결은 Story 7-2에서
   self.board = nil
 
-  -- Setup 구조체 (Story 7-2에서 구현)
-  self.setup = nil
+  -- Setup 구조체 (Story 7-6)
+  self.setup = {
+    round = 1,                    -- 1 또는 2
+    direction = "forward",        -- "forward" | "reverse"
+    phase = "settlement",         -- "settlement" | "road"
+    currentPlayer = 1,            -- 현재 배치할 플레이어 (1-based)
+    lastPlacedSettlement = nil,   -- 마지막 배치한 정착지 위치 (도로 연결용)
+  }
 
   -- 주사위 결과 (Story 7-2에서 구현)
   self.diceResult = nil
 
   -- 승자 (Story 7-4에서 구현)
   self.winner = nil
+end
+
+--- Setup 모드인지 확인 (Story 7-6)
+-- @return boolean mode == "setup"
+function GameState:isSetup()
+  return self.mode == "setup"
+end
+
+--- Setup 모드에서 현재 배치할 플레이어 ID 반환 (Story 7-6)
+-- @return number 플레이어 ID (1-based)
+function GameState:getSetupPlayer()
+  return self.setup.currentPlayer
+end
+
+--- Setup 모드에서 현재 페이즈 반환 (Story 7-6)
+-- @return string "settlement" | "road"
+function GameState:getSetupPhase()
+  return self.setup.phase
+end
+
+--- Setup 페이즈 진행 (Story 7-6)
+-- settlement → road, road → 다음 플레이어, Round 전환, playing 모드 전환
+function GameState:advanceSetup()
+  if self.setup.phase == "settlement" then
+    -- settlement -> road 페이즈로 전환
+    self.setup.phase = "road"
+  else
+    -- road 페이즈 완료 후 다음 단계로
+    self.setup.phase = "settlement"
+    self.setup.lastPlacedSettlement = nil  -- 도로 배치용 정착지 위치 초기화
+
+    if self.setup.direction == "forward" then
+      -- Round 1: 정순 (1 → 2 → 3 → 4)
+      if self.setup.currentPlayer < self.config.playerCount then
+        self.setup.currentPlayer = self.setup.currentPlayer + 1
+      else
+        -- Round 1 완료 → Round 2 시작 (마지막 플레이어부터 역순)
+        self.setup.round = 2
+        self.setup.direction = "reverse"
+        -- currentPlayer는 그대로 유지 (마지막 플레이어가 다시 시작)
+      end
+    else
+      -- Round 2: 역순 (4 → 3 → 2 → 1)
+      if self.setup.currentPlayer > 1 then
+        self.setup.currentPlayer = self.setup.currentPlayer - 1
+      else
+        -- Round 2 완료 → playing 모드로 전환
+        self.mode = "playing"
+        self.turn.current = 1
+        self.turn.phase = "roll"
+        self.setup = nil  -- Setup 구조체 정리
+      end
+    end
+  end
 end
 
 --- 현재 턴 플레이어 객체 반환

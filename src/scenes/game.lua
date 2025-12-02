@@ -43,6 +43,9 @@ local hoverEdge = nil
 local selectedVertex = nil
 local selectedEdge = nil
 
+-- Setup 모드 상태 (Story 7-6)
+local lastPlacedSettlement = nil  -- 도로 배치용 마지막 정착지 위치
+
 -- 임계값 상수
 local VERTEX_THRESHOLD = 15
 local EDGE_THRESHOLD = 10
@@ -94,18 +97,21 @@ local function initActionButtons(screenWidth)
 end
 
 ---
--- 버튼 활성화 여부 확인 (Story 7-5: Task 2)
+-- 버튼 활성화 여부 확인 (Story 7-5: Task 2, Story 7-6: Setup 모드)
 -- @param buttonId string 버튼 ID
 -- @return boolean
 ---
 local function isButtonEnabled(buttonId)
   if not gameState then return false end
 
-  local phase = gameState:getPhase()
   local mode = gameState.mode
-  local currentPlayer = gameState:getCurrentPlayer()
 
+  -- Setup 모드에서는 모든 액션 버튼 비활성화 (Story 7-6)
+  if mode == "setup" then return false end
   if mode ~= "playing" then return false end
+
+  local phase = gameState:getPhase()
+  local currentPlayer = gameState:getCurrentPlayer()
 
   if buttonId == "roll" then
     -- Roll Dice: phase == "roll"
@@ -180,6 +186,11 @@ end
 -- 모든 액션 버튼 렌더링 (Story 7-5)
 ---
 local function drawActionButtons()
+  -- Setup 모드에서는 버튼 숨김 (Story 7-6)
+  if gameState and gameState:isSetup() then
+    return
+  end
+
   for i, btn in ipairs(actionButtons) do
     local isEnabled = isButtonEnabled(btn.id)
     local isHovered = (hoverButtonIndex == i)
@@ -194,6 +205,53 @@ local function drawActionButtons()
     love.graphics.setColor(0.8, 0.8, 0.8, 1)
     love.graphics.printf("ESC to cancel", actionButtons[1].x, modeY + 20, BUTTON_WIDTH, "center")
   end
+end
+
+---
+-- Setup 모드 안내 UI 렌더링 (Story 7-6: AC 7-6.1, 7-6.2, 7-6.3)
+-- @param screenWidth number 화면 너비
+---
+local function drawSetupUI(screenWidth)
+  if not gameState or not gameState:isSetup() then return end
+
+  local setup = gameState.setup
+  local currentPlayer = setup.currentPlayer
+  local phase = setup.phase
+
+  -- 안내 텍스트 배경
+  local boxX = screenWidth - 200
+  local boxY = 100
+  local boxW = 180
+  local boxH = 120
+
+  love.graphics.setColor(0.15, 0.2, 0.25, 0.95)
+  love.graphics.rectangle("fill", boxX, boxY, boxW, boxH, 8, 8)
+  love.graphics.setColor(0.4, 0.6, 0.8, 1)
+  love.graphics.rectangle("line", boxX, boxY, boxW, boxH, 8, 8)
+
+  -- 라운드/방향 정보
+  love.graphics.setColor(0.7, 0.8, 0.9, 1)
+  love.graphics.printf(string.format("Setup Round %d", setup.round), boxX, boxY + 10, boxW, "center")
+
+  -- 플레이어 표시
+  local playerColors = {
+    {0.9, 0.3, 0.3, 1},  -- Red
+    {0.3, 0.5, 0.9, 1},  -- Blue
+    {0.3, 0.8, 0.3, 1},  -- Green
+    {0.9, 0.7, 0.2, 1},  -- Yellow
+  }
+  love.graphics.setColor(playerColors[currentPlayer])
+  love.graphics.printf(string.format("Player %d", currentPlayer), boxX, boxY + 35, boxW, "center")
+
+  -- 페이즈 안내
+  love.graphics.setColor(1, 1, 1, 1)
+  local phaseText = phase == "settlement" and "Place Settlement" or "Place Road"
+  love.graphics.printf(phaseText, boxX, boxY + 60, boxW, "center")
+
+  -- 힌트
+  love.graphics.setColor(0.6, 0.6, 0.6, 1)
+  local hintText = phase == "settlement" and "Click on a vertex" or "Click on an edge"
+  love.graphics.printf(hintText, boxX, boxY + 85, boxW, "center")
 end
 
 ---
@@ -272,10 +330,54 @@ local function handleButtonClick(buttonId)
 end
 
 ---
--- 선택 모드에 따른 유효 위치 계산
+-- Setup 모드에서 도로 배치 가능 위치 계산 (Story 7-6: AC 7-6.3)
+-- 마지막 정착지에 인접한 변만 반환
+-- @param settlement table {q, r, dir} 마지막 배치 정착지
+-- @return table 유효한 변 목록
+---
+local function getSetupRoadLocations(settlement)
+  local Vertex = require("src.game.vertex")
+  local Edge = require("src.game.edge")
+  local validEdges = {}
+
+  local adjacentEdges = Vertex.getAdjacentEdges(settlement.q, settlement.r, settlement.dir)
+  for _, edge in ipairs(adjacentEdges) do
+    -- 변이 비어있는지 확인
+    if not board:hasRoad(edge.q, edge.r, edge.dir) then
+      validEdges[#validEdges + 1] = {q = edge.q, r = edge.r, dir = edge.dir}
+    end
+  end
+
+  return validEdges
+end
+
+---
+-- 선택 모드에 따른 유효 위치 계산 (Story 7-6 수정)
 -- @param mode string 선택 모드
 ---
 local function updateValidLocations(mode)
+  -- Setup 모드 처리 (Story 7-6)
+  if gameState and gameState:isSetup() then
+    local setupPhase = gameState:getSetupPhase()
+    local setupPlayer = gameState:getSetupPlayer()
+
+    if setupPhase == "settlement" then
+      -- 초기 배치: 거리 규칙만 적용 (isInitialPlacement = true)
+      validVertices = Rules.getValidSettlementLocations(board, setupPlayer, true)
+      validEdges = nil
+    elseif setupPhase == "road" then
+      -- 도로 배치: 마지막 정착지에 인접한 변만
+      if lastPlacedSettlement then
+        validEdges = getSetupRoadLocations(lastPlacedSettlement)
+      else
+        validEdges = {}
+      end
+      validVertices = nil
+    end
+    return
+  end
+
+  -- Playing 모드 (기존 로직)
   local currentPlayer = gameState:getCurrentPlayerId()
 
   if mode == "settlement" then
@@ -374,8 +476,15 @@ function game:enter(previous, passedGameState) -- luacheck: ignore previous
   selectedVertex = nil
   selectedEdge = nil
   hoverButtonIndex = nil
+  lastPlacedSettlement = nil
 
-  print(string.format("Game started with %d players", gameState.config.playerCount))
+  -- Setup 모드 초기화 (Story 7-6)
+  if gameState:isSetup() then
+    updateValidLocations()  -- 초기 정착지 배치 가능 위치 계산
+    print(string.format("Game started in Setup mode - Player %d: Place Settlement", gameState:getSetupPlayer()))
+  else
+    print(string.format("Game started with %d players", gameState.config.playerCount))
+  end
 end
 
 function game:leave()
@@ -419,8 +528,8 @@ function game:draw()
   -- 보드 렌더링
   BoardView.draw(board, HEX_SIZE, OFFSET_X, OFFSET_Y, buildings)
 
-  -- 하이라이트 렌더링
-  if selectionMode ~= "none" then
+  -- 하이라이트 렌더링 (Setup 모드 또는 선택 모드)
+  if gameState:isSetup() or selectionMode ~= "none" then
     BoardView.drawHighlights(validVertices, validEdges, HEX_SIZE, OFFSET_X, OFFSET_Y, hoverVertex, hoverEdge)
   end
 
@@ -451,13 +560,23 @@ function game:draw()
   -- 액션 버튼 렌더링 (Story 7-5)
   drawActionButtons()
 
+  -- Setup 모드 UI 렌더링 (Story 7-6)
+  drawSetupUI(screenWidth)
+
   -- 디버그 정보
   love.graphics.setColor(1, 1, 1, 1)
-  love.graphics.print(string.format("Players: %d | Current: P%d | Round: %d | Phase: %s",
-    gameState.config.playerCount,
-    gameState.turn.current,
-    gameState.turn.round,
-    gameState.turn.phase), 10, screenHeight - 40)
+  if gameState:isSetup() then
+    love.graphics.print(string.format("Mode: Setup | Round: %d | Player: %d | Phase: %s",
+      gameState.setup.round,
+      gameState:getSetupPlayer(),
+      gameState:getSetupPhase()), 10, screenHeight - 40)
+  else
+    love.graphics.print(string.format("Players: %d | Current: P%d | Round: %d | Phase: %s",
+      gameState.config.playerCount,
+      gameState.turn.current,
+      gameState.turn.round,
+      gameState.turn.phase), 10, screenHeight - 40)
+  end
   love.graphics.print("Settlus of Catan - FPS: " .. love.timer.getFPS(), 10, screenHeight - 20)
 end
 
@@ -490,6 +609,30 @@ function game:mousemoved(x, y)
   -- 버튼 호버 상태 업데이트 (Story 7-5)
   hoverButtonIndex = findHoveredButton(x, y)
 
+  -- Setup 모드 호버 처리 (Story 7-6)
+  if gameState and gameState:isSetup() then
+    local setupPhase = gameState:getSetupPhase()
+    if setupPhase == "settlement" then
+      local vertex = Input.pixelToVertex(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, VERTEX_THRESHOLD)
+      if vertex and isValidVertex(vertex) then
+        hoverVertex = vertex
+      else
+        hoverVertex = nil
+      end
+      hoverEdge = nil
+    elseif setupPhase == "road" then
+      local edge = Input.pixelToEdge(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, EDGE_THRESHOLD)
+      if edge and isValidEdge(edge) then
+        hoverEdge = edge
+      else
+        hoverEdge = nil
+      end
+      hoverVertex = nil
+    end
+    return
+  end
+
+  -- Playing 모드 (기존 로직)
   if selectionMode == "none" then
     hoverVertex = nil
     hoverEdge = nil
@@ -515,8 +658,107 @@ function game:mousemoved(x, y)
   end
 end
 
+---
+-- Setup 모드 클릭 처리 (Story 7-6: Task 4, 5, 6)
+-- @param x number 마우스 x
+-- @param y number 마우스 y
+-- @return boolean 클릭이 처리되었으면 true
+---
+local function handleSetupClick(x, y)
+  if not gameState:isSetup() then return false end
+
+  local setupPhase = gameState:getSetupPhase()
+  local setupPlayer = gameState:getSetupPlayer()
+  local setupRound = gameState.setup.round
+  local game_obj = {board = board, players = gameState.players}
+
+  if setupPhase == "settlement" then
+    -- 정착지 배치 (AC 7-6.2)
+    local vertex = Input.pixelToVertex(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, VERTEX_THRESHOLD)
+    if vertex and isValidVertex(vertex) then
+      local success, err = Actions.buildSettlementFree(game_obj, setupPlayer, vertex)
+      if success then
+        print(string.format("Setup: Player %d placed settlement at (%d, %d, %s)",
+          setupPlayer, vertex.q, vertex.r, vertex.dir))
+
+        -- 마지막 배치 정착지 저장 (도로 연결용)
+        lastPlacedSettlement = {q = vertex.q, r = vertex.r, dir = vertex.dir}
+        gameState.setup.lastPlacedSettlement = lastPlacedSettlement
+
+        -- Round 2에서는 자원 지급 (AC 7-6.5)
+        if setupRound == 2 then
+          local resources = Rules.getInitialResources(board, vertex)
+          local player = gameState.players[setupPlayer]
+          for resourceType, amount in pairs(resources) do
+            player:addResource(resourceType, amount)
+            print(string.format("  -> Player %d received %d %s", setupPlayer, amount, resourceType))
+          end
+        end
+
+        -- phase 전환: settlement → road
+        gameState:advanceSetup()
+
+        -- 도로 배치 가능 위치 계산
+        updateValidLocations()
+        hoverVertex = nil
+        hoverEdge = nil
+
+        return true
+      else
+        print("Setup: Failed to place settlement - " .. (err or "Unknown error"))
+      end
+    end
+  elseif setupPhase == "road" then
+    -- 도로 배치 (AC 7-6.3)
+    local edge = Input.pixelToEdge(x, y, HEX_SIZE, OFFSET_X, OFFSET_Y, EDGE_THRESHOLD)
+    if edge and isValidEdge(edge) then
+      local success, err = Actions.buildRoadFree(game_obj, setupPlayer, edge)
+      if success then
+        print(string.format("Setup: Player %d placed road at (%d, %d, %s)",
+          setupPlayer, edge.q, edge.r, edge.dir))
+
+        -- 마지막 정착지 초기화
+        lastPlacedSettlement = nil
+
+        -- phase 전환: road → 다음 플레이어 또는 다음 라운드 또는 playing
+        gameState:advanceSetup()
+
+        -- 상태 확인 및 다음 위치 계산
+        if gameState:isSetup() then
+          updateValidLocations()
+          print(string.format("Setup: Now Player %d - %s phase (Round %d)",
+            gameState:getSetupPlayer(),
+            gameState:getSetupPhase(),
+            gameState.setup.round))
+        else
+          -- Setup 완료, Playing 모드로 전환됨
+          validVertices = nil
+          validEdges = nil
+          print(string.format("Setup complete! Game starts - Player %d's turn",
+            gameState:getCurrentPlayerId()))
+        end
+
+        hoverVertex = nil
+        hoverEdge = nil
+
+        return true
+      else
+        print("Setup: Failed to place road - " .. (err or "Unknown error"))
+      end
+    end
+  end
+
+  return false
+end
+
 function game:mousepressed(x, y, button)
   if button ~= 1 then return end  -- 좌클릭만 처리
+
+  -- 0. Setup 모드 클릭 처리 (Story 7-6)
+  if gameState and gameState:isSetup() then
+    handleSetupClick(x, y)
+    return
+  end
 
   -- 1. 버튼 클릭 체크 (Story 7-5: Task 3)
   local btnIdx = findHoveredButton(x, y)

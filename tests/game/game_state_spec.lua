@@ -40,10 +40,10 @@ describe("GameState", function()
       assert.equals("roll", game.turn.phase)
     end)
 
-    it("should initialize mode as playing", function()
+    it("should initialize mode as setup", function()
       local game = GameState(4)
 
-      assert.equals("playing", game.mode)
+      assert.equals("setup", game.mode)
     end)
 
     it("should create Player objects with correct ids", function()
@@ -336,6 +336,7 @@ describe("GameState", function()
   describe("canRoll()", function()
     it("should return true when mode=playing and phase=roll", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       assert.is_true(game:canRoll())
     end)
@@ -365,12 +366,14 @@ describe("GameState", function()
   describe("canBuild()", function()
     it("should return false when phase=roll", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       assert.is_false(game:canBuild())
     end)
 
     it("should return true when mode=playing and phase=main", function()
       local game = GameState(4)
+      game.mode = "playing"
       game:setPhase("main")
 
       assert.is_true(game:canBuild())
@@ -396,6 +399,7 @@ describe("GameState", function()
   describe("rollDice()", function()
     it("should return dice result with die1, die2, sum", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       local result = game:rollDice()
 
@@ -408,6 +412,7 @@ describe("GameState", function()
 
     it("should store result in diceResult", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       local result = game:rollDice()
 
@@ -416,6 +421,7 @@ describe("GameState", function()
 
     it("should change phase to main after rolling", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       game:rollDice()
 
@@ -444,6 +450,7 @@ describe("GameState", function()
 
     it("should return values in valid range (1-6 each die, 2-12 sum)", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       for _ = 1, 50 do
         game:setPhase("roll")
@@ -459,6 +466,7 @@ describe("GameState", function()
   describe("endTurn() - phase reset", function()
     it("should reset phase to roll after endTurn", function()
       local game = GameState(4)
+      game.mode = "playing"
       game:setPhase("main")
 
       game:endTurn()
@@ -468,6 +476,7 @@ describe("GameState", function()
 
     it("should clear diceResult after endTurn", function()
       local game = GameState(4)
+      game.mode = "playing"
       game:rollDice()
       assert.is_not_nil(game.diceResult)
 
@@ -478,6 +487,7 @@ describe("GameState", function()
 
     it("should reset phase and advance player together", function()
       local game = GameState(4)
+      game.mode = "playing"
       game:rollDice()
 
       game:endTurn()
@@ -500,6 +510,7 @@ describe("GameState", function()
 
     it("should return nil when no player has 10 points", function()
       local game = GameState(4)
+      game.mode = "playing"
 
       local winner = game:checkVictory()
 
@@ -558,6 +569,7 @@ describe("GameState", function()
 
     it("should not change mode when no winner", function()
       local game = GameState(4)
+      game.mode = "playing"
       setVP(game.players[1], 9)
 
       game:checkVictory()
@@ -567,9 +579,347 @@ describe("GameState", function()
     end)
   end)
 
+  -- Story 7-6: Setup Mode Tests
+  describe("new() - setup mode initialization", function()
+    it("should initialize mode as 'setup' by default", function()
+      local game = GameState(4)
+
+      assert.equals("setup", game.mode)
+    end)
+
+    it("should initialize setup structure with correct defaults", function()
+      local game = GameState(4)
+
+      assert.is_not_nil(game.setup)
+      assert.equals(1, game.setup.round)
+      assert.equals("forward", game.setup.direction)
+      assert.equals("settlement", game.setup.phase)
+      assert.equals(1, game.setup.currentPlayer)
+    end)
+
+    it("should initialize lastPlacedSettlement as nil", function()
+      local game = GameState(4)
+
+      assert.is_nil(game.setup.lastPlacedSettlement)
+    end)
+  end)
+
+  describe("isSetup()", function()
+    it("should return true when mode is 'setup'", function()
+      local game = GameState(4)
+
+      assert.is_true(game:isSetup())
+    end)
+
+    it("should return false when mode is 'playing'", function()
+      local game = GameState(4)
+      game.mode = "playing"
+
+      assert.is_false(game:isSetup())
+    end)
+
+    it("should return false when mode is 'finished'", function()
+      local game = GameState(4)
+      game.mode = "finished"
+
+      assert.is_false(game:isSetup())
+    end)
+  end)
+
+  describe("getSetupPlayer()", function()
+    it("should return currentPlayer from setup structure", function()
+      local game = GameState(4)
+
+      assert.equals(1, game:getSetupPlayer())
+    end)
+
+    it("should return updated value after setup advances", function()
+      local game = GameState(4)
+      game.setup.currentPlayer = 3
+
+      assert.equals(3, game:getSetupPlayer())
+    end)
+  end)
+
+  describe("getSetupPhase()", function()
+    it("should return 'settlement' initially", function()
+      local game = GameState(4)
+
+      assert.equals("settlement", game:getSetupPhase())
+    end)
+
+    it("should return 'road' when setup.phase is road", function()
+      local game = GameState(4)
+      game.setup.phase = "road"
+
+      assert.equals("road", game:getSetupPhase())
+    end)
+  end)
+
+  describe("advanceSetup() - phase transitions", function()
+    it("should transition from settlement to road phase", function()
+      local game = GameState(4)
+      assert.equals("settlement", game:getSetupPhase())
+
+      game:advanceSetup()
+
+      assert.equals("road", game:getSetupPhase())
+      assert.equals(1, game:getSetupPlayer())  -- Same player
+    end)
+
+    it("should transition from road to next player in Round 1 (forward)", function()
+      local game = GameState(4)
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals("settlement", game:getSetupPhase())
+      assert.equals(2, game:getSetupPlayer())
+      assert.equals(1, game.setup.round)
+      assert.equals("forward", game.setup.direction)
+    end)
+
+    it("should cycle through all 4 players in Round 1", function()
+      local game = GameState(4)
+
+      -- Player 1: settlement -> road -> Player 2
+      game:advanceSetup()  -- settlement -> road
+      game:advanceSetup()  -- road -> next player (2)
+      assert.equals(2, game:getSetupPlayer())
+
+      -- Player 2: settlement -> road -> Player 3
+      game:advanceSetup()  -- settlement -> road
+      game:advanceSetup()  -- road -> next player (3)
+      assert.equals(3, game:getSetupPlayer())
+
+      -- Player 3: settlement -> road -> Player 4
+      game:advanceSetup()  -- settlement -> road
+      game:advanceSetup()  -- road -> next player (4)
+      assert.equals(4, game:getSetupPlayer())
+    end)
+
+    it("should transition to Round 2 after player 4 completes in Round 1", function()
+      local game = GameState(4)
+      game.setup.currentPlayer = 4
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals(2, game.setup.round)
+      assert.equals("reverse", game.setup.direction)
+      assert.equals(4, game:getSetupPlayer())  -- Player 4 starts Round 2
+      assert.equals("settlement", game:getSetupPhase())
+    end)
+
+    it("should go backwards in Round 2 (reverse direction)", function()
+      local game = GameState(4)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 4
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals(3, game:getSetupPlayer())  -- 4 -> 3
+      assert.equals("settlement", game:getSetupPhase())
+    end)
+
+    it("should cycle backwards through all players in Round 2", function()
+      local game = GameState(4)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 4
+      game.setup.phase = "settlement"
+
+      -- Player 4: settlement -> road -> Player 3
+      game:advanceSetup()  -- settlement -> road
+      game:advanceSetup()  -- road -> prev player (3)
+      assert.equals(3, game:getSetupPlayer())
+
+      -- Player 3: settlement -> road -> Player 2
+      game:advanceSetup()
+      game:advanceSetup()
+      assert.equals(2, game:getSetupPlayer())
+
+      -- Player 2: settlement -> road -> Player 1
+      game:advanceSetup()
+      game:advanceSetup()
+      assert.equals(1, game:getSetupPlayer())
+    end)
+
+    it("should transition to playing mode after player 1 completes Round 2", function()
+      local game = GameState(4)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 1
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals("playing", game.mode)
+      assert.equals(1, game.turn.current)
+      assert.equals("roll", game.turn.phase)
+    end)
+
+    it("should clear setup structure after transitioning to playing", function()
+      local game = GameState(4)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 1
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.is_nil(game.setup)
+    end)
+  end)
+
+  describe("advanceSetup() - 3 player game", function()
+    it("should transition to Round 2 after player 3 completes in Round 1", function()
+      local game = GameState(3)
+      game.setup.currentPlayer = 3
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals(2, game.setup.round)
+      assert.equals("reverse", game.setup.direction)
+      assert.equals(3, game:getSetupPlayer())
+    end)
+
+    it("should transition to playing after player 1 completes Round 2", function()
+      local game = GameState(3)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 1
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals("playing", game.mode)
+    end)
+  end)
+
+  describe("advanceSetup() - 2 player game", function()
+    it("should transition to Round 2 after player 2 completes in Round 1", function()
+      local game = GameState(2)
+      game.setup.currentPlayer = 2
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals(2, game.setup.round)
+      assert.equals("reverse", game.setup.direction)
+      assert.equals(2, game:getSetupPlayer())
+    end)
+
+    it("should transition to playing after player 1 completes Round 2", function()
+      local game = GameState(2)
+      game.setup.round = 2
+      game.setup.direction = "reverse"
+      game.setup.currentPlayer = 1
+      game.setup.phase = "road"
+
+      game:advanceSetup()
+
+      assert.equals("playing", game.mode)
+    end)
+  end)
+
+  describe("full setup flow - 4 player game (integration)", function()
+    it("should complete entire snake draft sequence", function()
+      local game = GameState(4)
+
+      -- Round 1: 1 -> 2 -> 3 -> 4
+      local expectedRound1 = {1, 2, 3, 4}
+      for i, expectedPlayer in ipairs(expectedRound1) do
+        assert.equals(expectedPlayer, game:getSetupPlayer(), "Round 1 player " .. i)
+        assert.equals("settlement", game:getSetupPhase())
+        game:advanceSetup()  -- settlement -> road
+        assert.equals("road", game:getSetupPhase())
+        game:advanceSetup()  -- road -> next
+      end
+
+      -- After Round 1, should be in Round 2
+      assert.equals(2, game.setup.round)
+      assert.equals("reverse", game.setup.direction)
+
+      -- Round 2: 4 -> 3 -> 2 -> 1
+      local expectedRound2 = {4, 3, 2, 1}
+      for i, expectedPlayer in ipairs(expectedRound2) do
+        if game:isSetup() then
+          assert.equals(expectedPlayer, game:getSetupPlayer(), "Round 2 player " .. i)
+          assert.equals("settlement", game:getSetupPhase())
+          game:advanceSetup()  -- settlement -> road
+          assert.equals("road", game:getSetupPhase())
+          game:advanceSetup()  -- road -> next
+        end
+      end
+
+      -- After Round 2, should be in playing mode
+      assert.equals("playing", game.mode)
+      assert.equals(1, game.turn.current)
+      assert.equals("roll", game.turn.phase)
+    end)
+  end)
+
+  describe("full setup flow - 3 player game (integration)", function()
+    it("should complete snake draft with 3 players", function()
+      local game = GameState(3)
+
+      -- Round 1: 1 -> 2 -> 3
+      for _, expected in ipairs({1, 2, 3}) do
+        assert.equals(expected, game:getSetupPlayer())
+        game:advanceSetup()  -- settlement
+        game:advanceSetup()  -- road
+      end
+
+      assert.equals(2, game.setup.round)
+      assert.equals("reverse", game.setup.direction)
+
+      -- Round 2: 3 -> 2 -> 1
+      for _, expected in ipairs({3, 2, 1}) do
+        if game:isSetup() then
+          assert.equals(expected, game:getSetupPlayer())
+          game:advanceSetup()  -- settlement
+          game:advanceSetup()  -- road
+        end
+      end
+
+      assert.equals("playing", game.mode)
+    end)
+  end)
+
+  describe("full setup flow - 2 player game (integration)", function()
+    it("should complete snake draft with 2 players", function()
+      local game = GameState(2)
+
+      -- Round 1: 1 -> 2
+      for _, expected in ipairs({1, 2}) do
+        assert.equals(expected, game:getSetupPlayer())
+        game:advanceSetup()  -- settlement
+        game:advanceSetup()  -- road
+      end
+
+      assert.equals(2, game.setup.round)
+
+      -- Round 2: 2 -> 1
+      for _, expected in ipairs({2, 1}) do
+        if game:isSetup() then
+          assert.equals(expected, game:getSetupPlayer())
+          game:advanceSetup()  -- settlement
+          game:advanceSetup()  -- road
+        end
+      end
+
+      assert.equals("playing", game.mode)
+    end)
+  end)
+
   describe("full turn cycle with phases", function()
     it("should complete a full turn cycle: roll -> main -> endTurn", function()
       local game = GameState(4)
+      game.mode = "playing"  -- Skip setup phase for this test
 
       -- Initial state
       assert.equals("roll", game:getPhase())
@@ -592,6 +942,7 @@ describe("GameState", function()
 
     it("should maintain phase state across multiple turns", function()
       local game = GameState(2)
+      game.mode = "playing"  -- Skip setup phase for this test
 
       for turn = 1, 4 do
         assert.equals("roll", game:getPhase())
