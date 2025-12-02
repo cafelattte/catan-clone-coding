@@ -596,13 +596,13 @@ end
 ---
 getSetupRoadLocations = function(settlement)
   local Vertex = require("src.game.vertex")
-  local Edge = require("src.game.edge")
+  local Edge = require("src.game.edge") -- luacheck: ignore Edge
   local validEdges = {}
 
   local adjacentEdges = Vertex.getAdjacentEdges(settlement.q, settlement.r, settlement.dir)
   for _, edge in ipairs(adjacentEdges) do
-    -- 변이 비어있는지 확인
-    if not board:hasRoad(edge.q, edge.r, edge.dir) then
+    -- 변이 보드 내에 있고 비어있는지 확인 (BUG-007)
+    if board:isValidEdge(edge.q, edge.r, edge.dir) and not board:hasRoad(edge.q, edge.r, edge.dir) then
       validEdges[#validEdges + 1] = {q = edge.q, r = edge.r, dir = edge.dir}
     end
   end

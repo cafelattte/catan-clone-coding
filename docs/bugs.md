@@ -14,6 +14,17 @@
 
 ## Fixed
 
+- [x] **BUG-007**: 경계 조건에서 배치 가능한 road 계산 오류
+  - 원인: edge 유효성 검사에서 경계 조건 미처리
+  - 수정 내용:
+    1. `Board:isValidVertex()` 함수 추가 - vertex의 인접 hex 중 하나라도 보드에 있으면 유효
+    2. `Board:isValidEdge()` 함수 추가 - edge의 양 끝 vertex가 모두 유효해야 유효
+    3. `Rules.canBuildInitialRoad()`에서 edge 유효성 검사 추가
+    4. `Rules.canBuildRoad()`에서 edge 유효성 검사 추가 (일반 도로 건설)
+    5. `getSetupRoadLocations()`에서 edge 유효성 검사 추가 (UI 하이라이트)
+  - 관련 파일: `src/game/board.lua`, `src/game/rules.lua`, `src/scenes/game.lua`
+  - 검증: `tests/game/board_spec.lua`, `tests/game/rules_spec.lua`에 테스트 추가
+
 - [x] **BUG-005**: 자원 획득 후 Road 건설 버튼 클릭 시 크래시
   - 원인: `handleButtonClick`(276줄)이 `updateValidLocations`(362줄)를 호출하는데, 둘 다 `local function`으로 정의되어 Lua의 forward reference 문제 발생
   - 수정: 파일 상단에 forward declaration 추가 (`local getSetupRoadLocations`, `local updateValidLocations`)

@@ -111,6 +111,11 @@ end
 function Rules.canBuildRoad(board, playerId, edge)
   local q, r, dir = edge.q, edge.r, edge.dir
 
+  -- 0. 변이 보드 내에 있는지 확인 (BUG-007: 경계 조건)
+  if not board:isValidEdge(q, r, dir) then
+    return false, "Edge is outside board"
+  end
+
   -- 1. 변이 비어있는지 확인
   if board:hasRoad(q, r, dir) then
     return false, "Edge is occupied"
@@ -338,6 +343,11 @@ end
 -- @return boolean 건설 가능 여부
 ---
 function Rules.canBuildInitialRoad(board, playerId, edge, settlement) -- luacheck: ignore playerId
+  -- 0. 변이 보드 내에 있는지 확인 (BUG-007: 경계 조건)
+  if not board:isValidEdge(edge.q, edge.r, edge.dir) then
+    return false
+  end
+
   -- 1. 변이 비어있는지 확인
   if board:hasRoad(edge.q, edge.r, edge.dir) then
     return false

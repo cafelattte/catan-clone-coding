@@ -862,4 +862,69 @@ describe("Board", function()
     end)
   end)
 
+  -- BUG-007: 경계 조건 edge 유효성 검사
+  describe("isValidVertex", function()
+    it("should return true for vertex adjacent to board hex", function()
+      local board = Board.newStandard()
+
+      -- (0, 0, N) 정점은 중앙 헥스에 인접
+      assert.is_true(board:isValidVertex(0, 0, "N"))
+      assert.is_true(board:isValidVertex(0, 0, "S"))
+    end)
+
+    it("should return true for vertex on board edge", function()
+      local board = Board.newStandard()
+
+      -- 외곽 헥스 (2, -2)의 N 정점
+      assert.is_true(board:isValidVertex(2, -2, "N"))
+    end)
+
+    it("should return false for vertex outside board", function()
+      local board = Board.newStandard()
+
+      -- (3, -1)은 보드에 없는 헥스
+      -- (3, -1, S) 정점의 인접 헥스: (3,-1), (3,0), (2,0)
+      -- (2, 0)만 보드에 있음 → 유효
+      -- 완전히 보드 밖인 좌표 사용
+      -- (5, 0, N)의 인접 헥스: (5,0), (5,-1), (6,-1) - 모두 보드 밖
+      assert.is_false(board:isValidVertex(5, 0, "N"))
+    end)
+  end)
+
+  describe("isValidEdge", function()
+    it("should return true for edge on board", function()
+      local board = Board.newStandard()
+
+      -- 중앙 헥스의 edge
+      assert.is_true(board:isValidEdge(0, 0, "E"))
+      assert.is_true(board:isValidEdge(0, 0, "NE"))
+      assert.is_true(board:isValidEdge(0, 0, "SE"))
+    end)
+
+    it("should return true for edge on board boundary", function()
+      local board = Board.newStandard()
+
+      -- 외곽 헥스 (2, 0)의 edge
+      assert.is_true(board:isValidEdge(2, 0, "E"))
+    end)
+
+    it("should return false for edge outside board (BUG-007)", function()
+      local board = Board.newStandard()
+
+      -- (3, -1, SE)는 보드 밖 - BUG-007 재현 케이스
+      -- SE edge의 양 끝 vertex: (3,-1,S), (3,0,N)
+      -- (3,-1,S)의 인접 헥스: (3,-1), (3,0), (2,0) - (2,0)만 유효
+      -- (3,0,N)의 인접 헥스: (3,0), (3,-1), (4,-1) - 모두 보드 밖
+      -- 따라서 (3,0,N)이 무효 → edge도 무효
+      assert.is_false(board:isValidEdge(3, -1, "SE"))
+    end)
+
+    it("should return false for edge completely outside board", function()
+      local board = Board.newStandard()
+
+      -- 완전히 보드 밖인 edge
+      assert.is_false(board:isValidEdge(5, 0, "E"))
+    end)
+  end)
+
 end)

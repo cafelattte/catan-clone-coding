@@ -22,8 +22,9 @@
 | 5 | Game Rules | 6 | FR8-FR12 |
 | 6 | Visual Experience | 5 | FR13-FR16 |
 | 7 | Complete Game Flow | 4 | FR17, FR18 |
+| 8 | UX/UI Improvements | - | 지속적 개선 |
 
-**총 스토리:** 33개
+**총 스토리:** 33개 + α (Epic 8은 지속적 추가)
 
 ---
 
@@ -1279,10 +1280,74 @@ Then mode = "playing", 플레이어 1 턴 시작
 5. Game Rules → 게임 규칙
 6. Visual Experience → UI/UX
 7. Complete Game Flow → 전체 흐름
+8. UX/UI Improvements → 지속적 개선
 
 **다음 단계:**
 - `/bmad:bmgd:workflows:sprint-planning` - 스프린트 상태 추적 파일 생성
 - `/bmad:bmgd:workflows:epic-tech-context` - 에픽별 기술 컨텍스트 생성
+
+---
+
+## Epic 8: UX/UI Improvements (사용성 개선)
+
+**목표:** 게임 플레이 경험 향상을 위한 지속적인 UI/UX 개선
+
+**특성:** 기능 완성 후 지속적으로 추가되는 개선 사항들을 관리하는 에픽
+
+---
+
+### Story 8.1: HUD 및 플레이어 정보 개선
+
+**As a** 플레이어,
+**I want** 게임 상태와 다른 플레이어 정보를 더 명확하게 볼 수 있어,
+**So that** 전략적 의사결정을 더 쉽게 할 수 있음.
+
+**Acceptance Criteria:**
+
+```
+AC 8-1.1: Admin 모드 및 플레이어 자원 표시
+Given adminMode = true
+When HUD 렌더링
+Then 모든 플레이어의 자원 상세 표시 (W:2 B:1 S:3 등)
+
+Given adminMode = false
+When HUD 렌더링
+Then 다른 플레이어는 총 카드 수만 표시 ("5 cards")
+
+AC 8-1.2: 건물 현황 표시
+Given HUD 플레이어 패널
+When 렌더링
+Then 각 플레이어의 도로/정착지/도시 개수 표시 (R:3 S:2 C:1)
+
+AC 8-1.3: 건설 비용 툴팁
+Given 건설 버튼 (Settlement/City/Road)
+When 마우스 호버
+Then 필요 자원 툴팁 표시 (예: "Wood 1, Brick 1, Sheep 1, Wheat 1")
+
+AC 8-1.4: 건설 가능 여부 피드백
+Given 자원이 부족한 건설 버튼
+When 버튼 표시
+Then 부족한 자원 시각적 표시 (빨간색 또는 아이콘)
+
+AC 8-1.5: 주사위 결과 타일 강조
+Given 주사위 굴림 결과
+When 결과 숫자 표시
+Then 해당 숫자의 타일들 하이라이트
+And 자원 획득 정보 표시 (누가 무엇을 얻었는지)
+
+AC 8-1.6: Settlement 배치 불가 피드백
+Given Settlement 버튼 클릭
+When 배치 가능한 위치가 없음
+Then 사용자에게 피드백 메시지 표시
+```
+
+**Prerequisites:** Epic 6, Epic 7 완료
+
+**Technical Notes:**
+- src/ui/hud.lua 확장
+- src/scenes/game.lua에 adminMode 플래그 추가
+- 툴팁 렌더링 시스템 추가
+- BoardView에 타일 하이라이트 기능 추가
 
 ---
 

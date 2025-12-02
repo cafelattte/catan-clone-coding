@@ -504,4 +504,26 @@ function Board:isVertexConnectedToRoad(playerId, q, r, dir)
   return false
 end
 
+--- 보드에 유효한 vertex인지 확인 (인접 hex 중 하나 이상이 보드에 있어야 함)
+function Board:isValidVertex(q, r, dir)
+  local nq, nr, ndir = Vertex.normalize(q, r, dir)
+  local adjacentHexes = Vertex.getAdjacentHexes(nq, nr, ndir)
+
+  for _, hex in ipairs(adjacentHexes) do
+    if self:getTile(hex.q, hex.r) then
+      return true
+    end
+  end
+
+  return false
+end
+
+--- 보드에 유효한 edge인지 확인 (양 끝 vertex가 모두 유효해야 함)
+function Board:isValidEdge(q, r, dir)
+  local nq, nr, ndir = Edge.normalize(q, r, dir)
+  local v1, v2 = Edge.getVertices(nq, nr, ndir)
+
+  return self:isValidVertex(v1.q, v1.r, v1.dir) and self:isValidVertex(v2.q, v2.r, v2.dir)
+end
+
 return Board

@@ -327,6 +327,17 @@ describe("Rules", function()
       assert.is_false(canBuild)
       assert.are.equal("Not connected to building or road", err)
     end)
+
+    -- BUG-007: 경계 조건에서 보드 밖 edge는 배치 불가
+    it("should return false for edge outside board (BUG-007)", function()
+      local standardBoard = Board.newStandard()
+
+      -- 완전히 보드 밖 edge 테스트: (5,0,E)
+      -- 이 edge의 양 끝 vertex가 모두 보드 밖 hex에만 인접
+      local canBuild, err = Rules.canBuildRoad(standardBoard, 1, {q = 5, r = 0, dir = "E"})
+      assert.is_false(canBuild)
+      assert.are.equal("Edge is outside board", err)
+    end)
   end)
 
   describe("canBuildCity", function()
@@ -413,7 +424,11 @@ describe("Rules", function()
 
     before_each(function()
       board = Board.new()
+      -- 최소 보드: (0,0,N) 정점의 3개 인접 edge가 모두 유효하도록
+      -- N 정점 인접 hexes: (0,0), (0,-1), (1,-1)
       board.tiles["0,0"] = {q = 0, r = 0, terrain = "forest", number = 8}
+      board.tiles["0,-1"] = {q = 0, r = -1, terrain = "hills", number = 6}
+      board.tiles["1,-1"] = {q = 1, r = -1, terrain = "pasture", number = 5}
     end)
 
     it("should return empty list if no buildings or roads", function()
@@ -538,6 +553,25 @@ describe("Rules", function()
         local canBuild = Rules.canBuildInitialRoad(board, 1,
           {q = 0, r = 0, dir = "NE"},
           {q = 0, r = 0, dir = "N"})
+        assert.is_false(canBuild)
+      end)
+
+      -- BUG-007: 경계 조건에서 보드 밖 edge는 배치 불가
+      it("should return false for edge outside board (BUG-007)", function()
+        -- 표준 보드 사용 (경계 조건 테스트)
+        local standardBoard = Board.newStandard()
+
+        -- (2, -2, N)은 보드 외곽 정점
+        -- 이 정점의 인접 edge 중 (2, -2, NE)는 보드 밖으로 나감
+        -- (2,-2,N)의 인접 edge: (2,-2,NE), (2,-3,E), (2,-3,SE)
+        -- (2,-3)은 보드에 없으므로 일부 edge는 무효
+
+        -- BUG-007 원래 케이스: (3,-1,S)에서 (3,-1,SE)
+        -- (3,-1,S)의 인접 edge: (2,0,NE), (2,0,E), (3,-1,SE)
+        -- (3,-1,SE)는 보드 밖
+        local canBuild = Rules.canBuildInitialRoad(standardBoard, 1,
+          {q = 3, r = -1, dir = "SE"},
+          {q = 3, r = -1, dir = "S"})  -- 이 정점 자체는 (2,0)과 인접해서 유효
         assert.is_false(canBuild)
       end)
     end)
