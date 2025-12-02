@@ -86,39 +86,82 @@ end
 -- @param x number 패널 X 좌표
 -- @param y number 패널 Y 좌표
 ---
-function HUD.drawScorePanel(players, currentPlayerId, x, y)
+function HUD.drawScorePanel(players, currentPlayerId, x, y, adminMode)
   if not players then return end
 
   local font = love.graphics.getFont()
   local lineHeight = font:getHeight() + 4
-  local panelHeight = #players * lineHeight + CONFIG.padding * 2
-  local panelWidth = CONFIG.scoreWidth
+  local panelWidth = 200  -- 확장된 너비
+  
+  -- 패널 높이 계산 (플레이어당 라인 수 증가)
+  local linesPerPlayer = adminMode and 3 or 2  -- admin: VP + 자원상세 + 건물, 일반: VP+카드수 + 건물
+  local panelHeight = #players * (linesPerPlayer * lineHeight + 8) + CONFIG.padding * 2
 
   -- 패널 배경
-  love.graphics.setColor(0, 0, 0, 0.7)
+  love.graphics.setColor(0, 0, 0, 0.8)
   love.graphics.rectangle("fill", x, y, panelWidth, panelHeight, 5, 5)
 
-  -- 각 플레이어 점수 표시
+  local currentY = y + CONFIG.padding
+
   for i, player in ipairs(players) do
-    local lineY = y + CONFIG.padding + (i - 1) * lineHeight
     local playerId = player.id or i
     local vp = player.victoryPoints or 0
 
     -- 현재 턴 플레이어 강조 (배경)
+    local playerBlockHeight = linesPerPlayer * lineHeight + 4
     if playerId == currentPlayerId then
-      love.graphics.setColor(1, 1, 1, 0.2)
-      love.graphics.rectangle("fill", x + 2, lineY - 2, panelWidth - 4, lineHeight, 3, 3)
+      love.graphics.setColor(1, 1, 1, 0.15)
+      love.graphics.rectangle("fill", x + 2, currentY - 2, panelWidth - 4, playerBlockHeight, 3, 3)
     end
 
-    -- 플레이어 색상 마커
+    -- 플레이어 색상 마커 + 이름/VP
     local playerColor = Colors.PLAYER[playerId] or {0.5, 0.5, 0.5}
     love.graphics.setColor(playerColor[1], playerColor[2], playerColor[3])
-    love.graphics.rectangle("fill", x + CONFIG.padding, lineY + 2, 10, 10, 2, 2)
+    love.graphics.rectangle("fill", x + CONFIG.padding, currentY + 2, 12, 12, 2, 2)
 
-    -- 텍스트
     love.graphics.setColor(1, 1, 1)
-    local text = string.format("P%d: %d VP", playerId, vp)
-    love.graphics.print(text, x + CONFIG.padding + 16, lineY)
+    local headerText = string.format("P%d: %d VP", playerId, vp)
+    love.graphics.print(headerText, x + CONFIG.padding + 18, currentY)
+    currentY = currentY + lineHeight
+
+    -- 자원 표시
+    if player.resources then
+      local resourceText
+      if adminMode then
+        -- Admin 모드: 각 자원 상세 표시
+        local parts = {}
+        for _, resType in ipairs(Constants.RESOURCE_TYPES) do
+          local amount = player.resources[resType] or 0
+          if amount > 0 then
+            local initial = resType:sub(1, 1):upper()
+            table.insert(parts, initial .. ":" .. amount)
+          end
+        end
+        resourceText = #parts > 0 and table.concat(parts, " ") or "(no cards)"
+      else
+        -- 일반 모드: 총 카드 수만
+        local total = 0
+        for _, resType in ipairs(Constants.RESOURCE_TYPES) do
+          total = total + (player.resources[resType] or 0)
+        end
+        resourceText = string.format("%d cards", total)
+      end
+      love.graphics.setColor(0.8, 0.8, 0.8)
+      love.graphics.print("  " .. resourceText, x + CONFIG.padding, currentY)
+      currentY = currentY + lineHeight
+    end
+
+    -- 건물 현황 표시
+    if player.buildings then
+      local b = player.buildings
+      local buildText = string.format("  R:%d S:%d C:%d", 
+        b.roads or 0, b.settlements or 0, b.cities or 0)
+      love.graphics.setColor(0.7, 0.7, 0.7)
+      love.graphics.print(buildText, x + CONFIG.padding, currentY)
+      currentY = currentY + lineHeight
+    end
+
+    currentY = currentY + 4  -- 플레이어 간 간격
   end
 end
 
@@ -217,7 +260,7 @@ function HUD.draw(gameState, screenWidth, screenHeight)
   -- 점수 패널 (우측 상단)
   local scorePanelX = screenWidth - CONFIG.scoreWidth - CONFIG.padding
   local scorePanelY = CONFIG.padding
-  HUD.drawScorePanel(players, currentPlayerId, scorePanelX, scorePanelY)
+  HUD.drawScorePanel(players, currentPlayerId, scorePanelX, scorePanelY, gameState.adminMode)
 
   -- 턴 정보 (상단 중앙)
   local turnInfoX = screenWidth / 2

@@ -317,14 +317,35 @@ function BoardView.drawHighlights(validVertices, validEdges, hexSize, offsetX, o
 end
 
 ---
+-- 타일 하이라이트 렌더링 (AC 8-1.5)
+-- @param px number 픽셀 X 좌표
+-- @param py number 픽셀 Y 좌표
+-- @param size number 헥스 크기
+---
+local function drawTileHighlight(px, py, size)
+  local corners = getHexCorners(px, py, size)
+
+  -- 반투명 노란색 오버레이
+  love.graphics.setColor(1, 0.9, 0.2, 0.3)
+  love.graphics.polygon("fill", corners)
+
+  -- 두꺼운 테두리
+  love.graphics.setLineWidth(3)
+  love.graphics.setColor(1, 0.8, 0, 0.9)
+  love.graphics.polygon("line", corners)
+  love.graphics.setLineWidth(1)
+end
+
+---
 -- 보드 전체 렌더링
 -- @param board table Board 인스턴스
 -- @param hexSize number 헥스 크기 (픽셀)
 -- @param offsetX number 보드 중심 X 오프셋
 -- @param offsetY number 보드 중심 Y 오프셋
 -- @param buildings table|nil 건물 데이터 (선택적)
+-- @param highlightNumber number|nil 하이라이트할 숫자 (AC 8-1.5)
 ---
-function BoardView.draw(board, hexSize, offsetX, offsetY, buildings)
+function BoardView.draw(board, hexSize, offsetX, offsetY, buildings, highlightNumber)
   local tiles = board:getAllTiles()
 
   -- 모든 타일 렌더링
@@ -345,6 +366,11 @@ function BoardView.draw(board, hexSize, offsetX, offsetY, buildings)
 
     -- 숫자 토큰 그리기
     drawNumberToken(px, py, tile.number, hexSize)
+
+    -- 타일 하이라이트 (AC 8-1.5)
+    if highlightNumber and tile.number == highlightNumber then
+      drawTileHighlight(px, py, hexSize)
+    end
   end
 
   -- 건물/도로 렌더링

@@ -65,9 +65,28 @@ local actionButtons = {}
 -- 버튼 호버 상태 (Story 7-5)
 local hoverButtonIndex = nil
 
+-- 툴팁 상태 (AC 8-1.3)
+local tooltip = {
+  visible = false,
+  x = 0,
+  y = 0,
+  text = "",
+}
+
+-- 타일 하이라이트 상태 (AC 8-1.5)
+local highlightedNumber = nil  -- 하이라이트할 숫자
+local resourceGains = nil      -- 자원 획득 정보 {{playerId, resources}, ...}
+
+-- 피드백 메시지 상태 (AC 8-1.6)
+local feedbackMessage = nil    -- 표시할 메시지
+local feedbackTimer = 0        -- 메시지 표시 시간
+
 -- Forward declarations (BUG-005 fix: local 함수 순서 문제 해결)
 local getSetupRoadLocations
 local updateValidLocations
+
+-- Admin 모드 (개발용: 모든 플레이어 자원 상세 표시)
+local adminMode = true
 
 ---
 -- 점이 사각형 내부에 있는지 확인
@@ -151,12 +170,34 @@ local function isButtonEnabled(buttonId)
 end
 
 ---
--- 버튼 렌더링 (Story 7-5: Task 1)
+-- 부족한 자원 목록 가져오기 (AC 8-1.4)
+-- @param buildType string 건물 타입
+-- @param player table 현재 플레이어
+-- @return table 부족한 자원 목록 {type, need, have}
+---
+local function getMissingResources(buildType, player)
+  if not player or not buildType then return {} end
+  local cost = Constants.BUILD_COSTS[buildType]
+  if not cost then return {} end
+
+  local missing = {}
+  for resType, need in pairs(cost) do
+    local have = player.resources and player.resources[resType] or 0
+    if have < need then
+      table.insert(missing, {type = resType, need = need, have = have})
+    end
+  end
+  return missing
+end
+
+---
+-- 버튼 렌더링 (Story 7-5: Task 1, AC 8-1.4: 부족 자원 표시)
 -- @param btn table 버튼 정보
 -- @param isEnabled boolean 활성화 상태
 -- @param isHovered boolean 호버 상태
+-- @param missingRes table|nil 부족한 자원 목록
 ---
-local function drawActionButton(btn, isEnabled, isHovered)
+local function drawActionButton(btn, isEnabled, isHovered, missingRes)
   local bgColor
   if not isEnabled then
     bgColor = {0.3, 0.3, 0.3, 0.5}  -- 비활성화
@@ -182,12 +223,24 @@ local function drawActionButton(btn, isEnabled, isHovered)
   local textColor = isEnabled and {1, 1, 1, 1} or {0.5, 0.5, 0.5, 0.7}
   love.graphics.setColor(textColor)
   local font = love.graphics.getFont()
-  local textY = btn.y + (btn.h - font:getHeight()) / 2
+  local textY = btn.y + (btn.h - font:getHeight()) / 2 - 5
   love.graphics.printf(btn.label, btn.x, textY, btn.w, "center")
+
+  -- 부족한 자원 표시 (AC 8-1.4)
+  if not isEnabled and missingRes and #missingRes > 0 then
+    local parts = {}
+    for _, res in ipairs(missingRes) do
+      local initial = res.type:sub(1, 1):upper()
+      table.insert(parts, initial .. ":" .. res.have .. "/" .. res.need)
+    end
+    local missingText = table.concat(parts, " ")
+    love.graphics.setColor(0.9, 0.4, 0.4, 1)  -- 빨간색
+    love.graphics.printf(missingText, btn.x, textY + font:getHeight() + 2, btn.w, "center")
+  end
 end
 
 ---
--- 모든 액션 버튼 렌더링 (Story 7-5)
+-- 모든 액션 버튼 렌더링 (Story 7-5, AC 8-1.4)
 ---
 local function drawActionButtons()
   -- Setup 모드에서는 버튼 숨김 (Story 7-6)
@@ -195,10 +248,17 @@ local function drawActionButtons()
     return
   end
 
+  local currentPlayer = gameState and gameState:getCurrentPlayer()
+
   for i, btn in ipairs(actionButtons) do
     local isEnabled = isButtonEnabled(btn.id)
     local isHovered = (hoverButtonIndex == i)
-    drawActionButton(btn, isEnabled, isHovered and isEnabled)
+    -- 부족한 자원 계산 (AC 8-1.4)
+    local missingRes = nil
+    if not isEnabled and (btn.id == "settlement" or btn.id == "city" or btn.id == "road") then
+      missingRes = getMissingResources(btn.id, currentPlayer)
+    end
+    drawActionButton(btn, isEnabled, isHovered and isEnabled, missingRes)
   end
 
   -- 현재 선택 모드 표시
@@ -274,6 +334,146 @@ local function findHoveredButton(x, y)
 end
 
 ---
+-- 건설 비용 문자열 생성 (AC 8-1.3)
+-- @param buildType string 건물 타입 ("road", "settlement", "city")
+-- @return string 비용 문자열 (예: "Wood 1, Brick 1")
+---
+local function getBuildCostText(buildType)
+  local cost = Constants.BUILD_COSTS[buildType]
+  if not cost then return "" end
+
+  local parts = {}
+  local order = {"wood", "brick", "sheep", "wheat", "ore"}
+  for _, resType in ipairs(order) do
+    local amount = cost[resType]
+    if amount and amount > 0 then
+      local name = resType:sub(1,1):upper() .. resType:sub(2)
+      table.insert(parts, name .. " " .. amount)
+    end
+  end
+  return table.concat(parts, ", ")
+end
+
+---
+-- 툴팁 렌더링 (AC 8-1.3)
+---
+local function drawTooltip()
+  if not tooltip.visible or tooltip.text == "" then return end
+
+  local font = love.graphics.getFont()
+  local textWidth = font:getWidth(tooltip.text)
+  local textHeight = font:getHeight()
+  local padding = 6
+  local boxWidth = textWidth + padding * 2
+  local boxHeight = textHeight + padding * 2
+
+  -- 툴팁 위치 (버튼 왼쪽에 표시)
+  local boxX = tooltip.x - boxWidth - 5
+  local boxY = tooltip.y
+
+  -- 배경
+  love.graphics.setColor(0.1, 0.1, 0.1, 0.95)
+  love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 4, 4)
+
+  -- 테두리
+  love.graphics.setColor(0.6, 0.6, 0.6, 1)
+  love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 4, 4)
+
+  -- 텍스트
+  love.graphics.setColor(1, 1, 1, 1)
+  love.graphics.print(tooltip.text, boxX + padding, boxY + padding)
+end
+
+---
+-- 피드백 메시지 렌더링 (AC 8-1.6)
+---
+local function drawFeedbackMessage()
+  if not feedbackMessage then return end
+
+  local font = love.graphics.getFont()
+  local textWidth = font:getWidth(feedbackMessage)
+  local textHeight = font:getHeight()
+  local padding = 10
+  local boxWidth = textWidth + padding * 2
+  local boxHeight = textHeight + padding * 2
+
+  -- 화면 중앙 상단
+  local screenWidth = love.graphics.getWidth()
+  local boxX = (screenWidth - boxWidth) / 2
+  local boxY = 60
+
+  -- 배경 (빨간 테두리)
+  love.graphics.setColor(0.15, 0.1, 0.1, 0.95)
+  love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 6, 6)
+  love.graphics.setColor(0.9, 0.3, 0.3, 1)
+  love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 6, 6)
+
+  -- 텍스트
+  love.graphics.setColor(1, 0.8, 0.8, 1)
+  love.graphics.print(feedbackMessage, boxX + padding, boxY + padding)
+end
+
+---
+-- 자원 획득 정보 오버레이 렌더링 (AC 8-1.5)
+---
+local function drawResourceGains()
+  if not resourceGains or #resourceGains == 0 then return end
+
+  local font = love.graphics.getFont()
+  local lineHeight = font:getHeight() + 2
+  local padding = 10
+  local boxX = 10
+  local boxY = 60
+
+  -- 획득 정보 문자열 생성
+  local lines = {"Resources Gained:"}
+  for _, gain in ipairs(resourceGains) do
+    local parts = {}
+    for resType, amount in pairs(gain.resources) do
+      if amount > 0 then
+        local initial = resType:sub(1, 1):upper()
+        table.insert(parts, initial .. ":" .. amount)
+      end
+    end
+    if #parts > 0 then
+      table.insert(lines, string.format("  P%d: %s", gain.playerId, table.concat(parts, " ")))
+    end
+  end
+
+  -- 아무도 획득 못했으면 표시 안함
+  if #lines == 1 then return end
+
+  local maxWidth = 0
+  for _, line in ipairs(lines) do
+    local w = font:getWidth(line)
+    if w > maxWidth then maxWidth = w end
+  end
+
+  local boxWidth = maxWidth + padding * 2
+  local boxHeight = #lines * lineHeight + padding * 2
+
+  -- 배경
+  love.graphics.setColor(0.1, 0.1, 0.1, 0.9)
+  love.graphics.rectangle("fill", boxX, boxY, boxWidth, boxHeight, 6, 6)
+
+  -- 테두리 (노란색)
+  love.graphics.setColor(1, 0.8, 0, 1)
+  love.graphics.rectangle("line", boxX, boxY, boxWidth, boxHeight, 6, 6)
+
+  -- 텍스트
+  local y = boxY + padding
+  for i, line in ipairs(lines) do
+    if i == 1 then
+      love.graphics.setColor(1, 0.9, 0.3, 1)  -- 제목: 노란색
+    else
+      love.graphics.setColor(1, 1, 1, 1)
+    end
+    love.graphics.print(line, boxX + padding, y)
+    y = y + lineHeight
+  end
+end
+
+---
 -- 버튼 클릭 핸들러 (Story 7-5: Task 3, 4, 5, 6)
 -- @param buttonId string 버튼 ID
 ---
@@ -281,10 +481,45 @@ local function handleButtonClick(buttonId)
   if not isButtonEnabled(buttonId) then return end
 
   if buttonId == "roll" then
-    -- Roll Dice (Task 4)
+    -- Roll Dice (Task 4, AC 8-1.5: 타일 하이라이트)
+    -- 분배 전 자원 저장
+    local beforeResources = {}
+    for _, player in ipairs(gameState.players) do
+      beforeResources[player.id] = {}
+      for resType, amount in pairs(player.resources) do
+        beforeResources[player.id][resType] = amount
+      end
+    end
+
     local result = gameState:rollDice()
     if result then
       print(string.format("Dice rolled: %d + %d = %d", result.die1, result.die2, result.sum))
+
+      -- 타일 하이라이트 설정 (7이 아닌 경우만)
+      if result.sum ~= 7 then
+        highlightedNumber = result.sum
+
+        -- 자원 획득 정보 계산
+        resourceGains = {}
+        for _, player in ipairs(gameState.players) do
+          local gains = {}
+          local hasGain = false
+          for resType, amount in pairs(player.resources) do
+            local before = beforeResources[player.id][resType] or 0
+            local diff = amount - before
+            if diff > 0 then
+              gains[resType] = diff
+              hasGain = true
+            end
+          end
+          if hasGain then
+            table.insert(resourceGains, {playerId = player.id, resources = gains})
+          end
+        end
+      else
+        highlightedNumber = nil
+        resourceGains = nil
+      end
     end
     -- 선택 모드 해제
     selectionMode = "none"
@@ -292,16 +527,30 @@ local function handleButtonClick(buttonId)
     validEdges = nil
   elseif buttonId == "settlement" then
     -- Settlement 선택 모드 진입 (Task 5)
+    -- 다른 액션 시 하이라이트 해제 (AC 8-1.5)
+    highlightedNumber = nil
+    resourceGains = nil
     if selectionMode == "settlement" then
       selectionMode = "none"
     else
       selectionMode = "settlement"
     end
     updateValidLocations(selectionMode)
+
+    -- 배치 가능 위치 체크 (AC 8-1.6)
+    if selectionMode == "settlement" and (not validVertices or #validVertices == 0) then
+      feedbackMessage = "No valid settlement locations"
+      feedbackTimer = 2.5
+      selectionMode = "none"
+    end
+
     hoverVertex = nil
     hoverEdge = nil
   elseif buttonId == "city" then
     -- City 선택 모드 진입 (Task 5)
+    -- 다른 액션 시 하이라이트 해제 (AC 8-1.5)
+    highlightedNumber = nil
+    resourceGains = nil
     if selectionMode == "city" then
       selectionMode = "none"
     else
@@ -312,6 +561,9 @@ local function handleButtonClick(buttonId)
     hoverEdge = nil
   elseif buttonId == "road" then
     -- Road 선택 모드 진입 (Task 5)
+    -- 다른 액션 시 하이라이트 해제 (AC 8-1.5)
+    highlightedNumber = nil
+    resourceGains = nil
     if selectionMode == "road" then
       selectionMode = "none"
     else
@@ -322,6 +574,9 @@ local function handleButtonClick(buttonId)
     hoverEdge = nil
   elseif buttonId == "endturn" then
     -- End Turn (Task 6)
+    -- 다른 액션 시 하이라이트 해제 (AC 8-1.5)
+    highlightedNumber = nil
+    resourceGains = nil
     gameState:endTurn()
     selectionMode = "none"
     validVertices = nil
@@ -515,8 +770,17 @@ local function checkVictoryAndTransition()
   end
 end
 
-function game:update(dt) -- luacheck: ignore dt
+function game:update(dt)
   if not gameState then return end
+
+  -- 피드백 메시지 타이머 (AC 8-1.6)
+  if feedbackMessage and feedbackTimer > 0 then
+    feedbackTimer = feedbackTimer - dt
+    if feedbackTimer <= 0 then
+      feedbackMessage = nil
+      feedbackTimer = 0
+    end
+  end
 
   -- 게임 모드가 finished면 즉시 전환
   if gameState.mode == "finished" and gameState.winner then
@@ -529,8 +793,8 @@ function game:draw()
   -- 배경
   love.graphics.clear(0.1, 0.15, 0.2)
 
-  -- 보드 렌더링
-  BoardView.draw(board, HEX_SIZE, OFFSET_X, OFFSET_Y, buildings)
+  -- 보드 렌더링 (AC 8-1.5: 하이라이트 숫자 전달)
+  BoardView.draw(board, HEX_SIZE, OFFSET_X, OFFSET_Y, buildings, highlightedNumber)
 
   -- 하이라이트 렌더링 (Setup 모드 또는 선택 모드)
   if gameState:isSetup() or selectionMode ~= "none" then
@@ -549,6 +813,7 @@ function game:draw()
       phase = gameState.turn.phase,
     },
     diceResult = gameState.diceResult,
+    adminMode = adminMode,
   }
 
   for i, player in ipairs(gameState.players) do
@@ -556,6 +821,7 @@ function game:draw()
       id = player.id,
       resources = player.resources,
       victoryPoints = player:getVictoryPoints(),
+      buildings = player.buildings,  -- 건물 현황
     }
   end
 
@@ -566,6 +832,15 @@ function game:draw()
 
   -- Setup 모드 UI 렌더링 (Story 7-6)
   drawSetupUI(screenWidth)
+
+  -- 툴팁 렌더링 (AC 8-1.3)
+  drawTooltip()
+
+  -- 자원 획득 정보 오버레이 (AC 8-1.5)
+  drawResourceGains()
+
+  -- 피드백 메시지 (AC 8-1.6)
+  drawFeedbackMessage()
 
   -- 디버그 정보
   love.graphics.setColor(1, 1, 1, 1)
@@ -585,6 +860,13 @@ function game:draw()
 end
 
 function game:keypressed(key)
+  -- F1: Admin 모드 토글 (AC 8-1.1)
+  if key == "f1" then
+    adminMode = not adminMode
+    print("Admin mode: " .. (adminMode and "ON" or "OFF"))
+    return
+  end
+
   local newMode = selectionMode
 
   if key == "s" then
@@ -612,6 +894,18 @@ end
 function game:mousemoved(x, y)
   -- 버튼 호버 상태 업데이트 (Story 7-5)
   hoverButtonIndex = findHoveredButton(x, y)
+
+  -- 툴팁 업데이트 (AC 8-1.3)
+  tooltip.visible = false
+  if hoverButtonIndex then
+    local btn = actionButtons[hoverButtonIndex]
+    if btn.id == "settlement" or btn.id == "city" or btn.id == "road" then
+      tooltip.visible = true
+      tooltip.x = btn.x
+      tooltip.y = btn.y + btn.h / 2 - 10
+      tooltip.text = getBuildCostText(btn.id)
+    end
+  end
 
   -- Setup 모드 호버 처리 (Story 7-6)
   if gameState and gameState:isSetup() then

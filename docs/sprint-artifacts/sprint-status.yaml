@@ -96,3 +96,7 @@ development_status:
   7-5-gameplay-integration: done
   7-6-setup-phase-ui: done
   epic-7-retrospective: optional
+
+  # Epic 8: UX/UI Improvements (지속적 개선)
+  epic-8: contexted
+  8-1-hud-player-info-improvements: done
