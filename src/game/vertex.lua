@@ -19,13 +19,8 @@ Vertex.DIRECTIONS = {"N", "S"}
 -- @return q, r, dir 정규화된 좌표
 ---
 function Vertex.normalize(q, r, dir)
-  if dir == "S" then
-    -- S 정점은 아래쪽 정점
-    -- (q, r, S)는 (q, r+1, N)과 같은 물리적 위치일 수 있음
-    -- 정규화: r이 작은 쪽의 N을 사용
-    return q, r + 1, "N"
-  end
-  -- N 정점은 그대로 유지
+  -- Pointy-top 헥스에서 N과 S는 서로 다른 물리적 위치
+  -- 정규화 없이 그대로 반환
   return q, r, dir
 end
 
@@ -48,6 +43,26 @@ end
 function Vertex.fromString(str)
   local q, r, dir = str:match("([%-]?%d+),([%-]?%d+),(%a+)")
   return tonumber(q), tonumber(r), dir
+end
+
+---
+-- 헥스의 6개 정점 조회
+-- Pointy-top 헥스에서 6개 정점 반환 (시계방향, N부터)
+-- @param q number 헥스 q 좌표
+-- @param r number 헥스 r 좌표
+-- @return table 정점 목록 {{q, r, dir}, ...}
+---
+function Vertex.getHexVertices(q, r)
+  -- Pointy-top 헥스의 6개 정점
+  -- 시계방향: N(위), NE(우상), SE(우하), S(아래), SW(좌하), NW(좌상)
+  return {
+    {q = q, r = r, dir = "N"},           -- N: 자신의 N 정점
+    {q = q + 1, r = r - 1, dir = "S"},   -- NE: 오른쪽 위 헥스의 S 정점
+    {q = q, r = r + 1, dir = "N"},       -- SE: 아래 헥스의 N 정점
+    {q = q, r = r, dir = "S"},           -- S: 자신의 S 정점
+    {q = q - 1, r = r + 1, dir = "N"},   -- SW: 왼쪽 아래 헥스의 N 정점
+    {q = q, r = r - 1, dir = "S"},       -- NW: 위쪽 헥스의 S 정점
+  }
 end
 
 ---
@@ -110,15 +125,15 @@ function Vertex.getAdjacentEdges(q, r, dir)
   local Edge = require("src.game.edge")
   local edges = {}
   if dir == "N" then
-    -- N 정점의 3개 인접 변
+    -- N 정점의 3개 인접 변 (픽셀 좌표로 검증됨)
     edges[1] = Edge.normalizeEdge(q, r, "NE")      -- 자신의 NE
-    edges[2] = Edge.normalizeEdge(q - 1, r, "E")   -- 왼쪽 헥스의 E
+    edges[2] = Edge.normalizeEdge(q, r - 1, "E")   -- 위쪽 헥스의 E
     edges[3] = Edge.normalizeEdge(q, r - 1, "SE")  -- 위쪽 헥스의 SE
   else -- S
-    -- S 정점의 3개 인접 변
-    edges[1] = Edge.normalizeEdge(q, r, "E")       -- 자신의 E
-    edges[2] = Edge.normalizeEdge(q, r, "SE")      -- 자신의 SE
-    edges[3] = Edge.normalizeEdge(q + 1, r, "NE")  -- 오른쪽 헥스의 NE
+    -- S 정점의 3개 인접 변 (픽셀 좌표로 검증됨)
+    edges[1] = Edge.normalizeEdge(q - 1, r + 1, "NE")  -- 왼쪽 아래 헥스의 NE
+    edges[2] = Edge.normalizeEdge(q - 1, r + 1, "E")   -- 왼쪽 아래 헥스의 E
+    edges[3] = Edge.normalizeEdge(q, r, "SE")          -- 자신의 SE
   end
   return edges
 end

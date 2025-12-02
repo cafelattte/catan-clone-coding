@@ -382,42 +382,48 @@ describe("Board", function()
     end)
   end)
 
-  describe("vertex normalization consistency", function()
-    it("should detect duplicate via normalization (0,-1,S) == (0,0,N)", function()
+  describe("vertex storage consistency", function()
+    -- 참고: Pointy-top 헥스에서 N과 S는 물리적으로 다른 위치
+    -- (0, -1, S)와 (0, 0, N)은 다른 위치임
+
+    it("should store and retrieve vertex by exact coordinates", function()
       local board = Board.new()
 
-      -- (0, -1, S) 방향에 배치
       board:placeSettlement(1, 0, -1, "S")
 
-      -- (0, 0, N)으로 조회 - 같은 물리적 위치
-      local building = board:getBuilding(0, 0, "N")
+      -- 같은 좌표로 조회해야 함
+      local building = board:getBuilding(0, -1, "S")
 
       assert.is_not_nil(building)
       assert.equals("settlement", building.type)
       assert.equals(1, building.player)
     end)
 
-    it("should prevent duplicate placement via normalization", function()
+    it("should allow placement on N and S of same hex (different positions)", function()
       local board = Board.new()
 
-      -- (0, -1, S)에 배치
-      board:placeSettlement(1, 0, -1, "S")
+      -- (0, 0, N)과 (0, 0, S)는 다른 물리적 위치
+      board:placeSettlement(1, 0, 0, "N")
+      local success = board:placeSettlement(2, 0, 0, "S")
 
-      -- (0, 0, N)에 배치 시도 - 같은 물리적 위치이므로 실패해야 함
+      assert.is_true(success)
+
+      -- 각각 조회 가능해야 함
+      local buildingN = board:getBuilding(0, 0, "N")
+      local buildingS = board:getBuilding(0, 0, "S")
+
+      assert.equals(1, buildingN.player)
+      assert.equals(2, buildingS.player)
+    end)
+
+    it("should prevent duplicate placement on exact same vertex", function()
+      local board = Board.new()
+
+      board:placeSettlement(1, 0, 0, "N")
       local success, err = board:placeSettlement(2, 0, 0, "N")
 
       assert.is_false(success)
       assert.equals("이미 건물이 있습니다", err)
-    end)
-
-    it("should allow placement on different normalized vertices", function()
-      local board = Board.new()
-
-      board:placeSettlement(1, 0, 0, "N")
-      local success = board:placeSettlement(2, 0, 0, "S")
-
-      -- (0, 0, S)는 (0, 1, N)으로 정규화됨 - 다른 위치
-      assert.is_true(success)
     end)
   end)
 
@@ -454,14 +460,14 @@ describe("Board", function()
       assert.equals("이미 도시입니다", err)
     end)
 
-    it("should work with normalized coordinates", function()
+    it("should work with exact coordinates", function()
       local board = Board.new()
 
       -- (0, -1, S)에 배치
       board:placeSettlement(1, 0, -1, "S")
 
-      -- (0, 0, N)으로 업그레이드 - 같은 물리적 위치
-      local success = board:upgradeToCity(0, 0, "N")
+      -- 같은 좌표로 업그레이드
+      local success = board:upgradeToCity(0, -1, "S")
 
       assert.is_true(success)
 
@@ -543,13 +549,15 @@ describe("Board", function()
       assert.is_true(board:hasBuilding(0, 0, "N"))
     end)
 
-    it("should work with normalized coordinates", function()
+    it("should work with exact coordinates", function()
       local board = Board.new()
 
       board:placeSettlement(1, 0, -1, "S")
 
-      -- (0, 0, N)으로 조회 - 같은 물리적 위치
-      assert.is_true(board:hasBuilding(0, 0, "N"))
+      -- 같은 좌표로 조회
+      assert.is_true(board:hasBuilding(0, -1, "S"))
+      -- 다른 좌표로는 찾을 수 없음
+      assert.is_false(board:hasBuilding(0, 0, "N"))
     end)
   end)
 
@@ -821,35 +829,31 @@ describe("Board", function()
       assert.is_false(result)
     end)
 
-    it("should work with vertex normalization", function()
+    it("should not connect different vertices", function()
       local board = Board.new()
       -- (0, 0, SE) 변 배치
       board:placeRoad(1, 0, 0, "SE")
 
-      -- (0, 0, S) 정점의 인접 변: (0,0,E), (0,0,SE), (1,0,NE)
-      -- (0, 0, S)는 (0, 1, N)과 동일 (정규화)
+      -- (0, -1, S) 정점의 인접 변 (픽셀 좌표로 검증됨): (-1,0,NE), (-1,0,E), (0,-1,SE)
+      -- (0, 0, SE)는 이 목록에 없음
       local result = board:isVertexConnectedToRoad(1, 0, -1, "S")
 
-      -- (0, -1, S) 정규화 → (0, 0, N)
-      -- (0, 0, N)의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
-      -- (0, 0, SE)는 이 목록에 없음
       assert.is_false(result)
     end)
 
     it("should detect connection via any of the 3 adjacent edges", function()
       local board = Board.new()
-      -- (0, 0, N) 정점의 인접 변: (0,0,NE), (-1,0,E), (0,-1,SE)
-      board:placeRoad(1, -1, 0, "E")
+      -- (0, 0, N) 정점의 인접 변 (픽셀 좌표로 검증됨): (0,0,NE), (0,-1,E), (0,-1,SE)
+      board:placeRoad(1, 0, -1, "E")
 
       local result = board:isVertexConnectedToRoad(1, 0, 0, "N")
 
       assert.is_true(result)
     end)
 
-    it("should work with S vertex (normalized to N)", function()
+    it("should work with S vertex", function()
       local board = Board.new()
-      -- (0, 0, S) 정규화 → (0, 1, N)
-      -- (0, 1, N)의 인접 변: (0,1,NE), (-1,1,E), (0,0,SE)
+      -- (0, 0, S) 정점의 인접 변 (픽셀 좌표로 검증됨): (-1,1,NE), (-1,1,E), (0,0,SE)
       board:placeRoad(1, 0, 0, "SE")
 
       local result = board:isVertexConnectedToRoad(1, 0, 0, "S")

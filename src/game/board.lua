@@ -356,25 +356,15 @@ function Board:getSettlementsOnTile(q, r)
   local settlements = {}
   local seen = {}  -- 중복 방지
 
-  -- 타일의 6개 정점 순회 (N, S 각각 자신과 인접 헥스)
-  -- 헥스의 정점: N(상단), S(하단)
-  -- 그리고 인접 헥스의 정점들도 이 타일에 접함
-  local vertices = {
-    {q = q, r = r, dir = "N"},
-    {q = q, r = r, dir = "S"},
-    {q = q, r = r - 1, dir = "S"},  -- 위쪽 헥스의 S 정점
-    {q = q + 1, r = r - 1, dir = "S"},  -- 오른쪽 위 헥스의 S 정점
-    {q = q + 1, r = r, dir = "N"},  -- 오른쪽 아래 헥스의 N 정점
-    {q = q - 1, r = r + 1, dir = "N"}  -- 왼쪽 아래 헥스의 N 정점
-  }
+  -- 타일의 6개 정점 순회
+  local vertices = Vertex.getHexVertices(q, r)
 
   for _, v in ipairs(vertices) do
     local key = vertexKey(v.q, v.r, v.dir)
     if self.settlements[key] and not seen[key] then
       seen[key] = true
-      local nq, nr, ndir = Vertex.normalize(v.q, v.r, v.dir)
       settlements[#settlements + 1] = {
-        q = nq, r = nr, dir = ndir,
+        q = v.q, r = v.r, dir = v.dir,
         player = self.settlements[key].player
       }
     end
@@ -394,22 +384,14 @@ function Board:getCitiesOnTile(q, r)
   local seen = {}  -- 중복 방지
 
   -- 타일의 6개 정점 순회
-  local vertices = {
-    {q = q, r = r, dir = "N"},
-    {q = q, r = r, dir = "S"},
-    {q = q, r = r - 1, dir = "S"},
-    {q = q + 1, r = r - 1, dir = "S"},
-    {q = q + 1, r = r, dir = "N"},
-    {q = q - 1, r = r + 1, dir = "N"}
-  }
+  local vertices = Vertex.getHexVertices(q, r)
 
   for _, v in ipairs(vertices) do
     local key = vertexKey(v.q, v.r, v.dir)
     if self.cities[key] and not seen[key] then
       seen[key] = true
-      local nq, nr, ndir = Vertex.normalize(v.q, v.r, v.dir)
       cities[#cities + 1] = {
-        q = nq, r = nr, dir = ndir,
+        q = v.q, r = v.r, dir = v.dir,
         player = self.cities[key].player
       }
     end

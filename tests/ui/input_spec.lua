@@ -125,16 +125,17 @@ describe("Input", function()
       assert.is_nil(vertex)
     end)
 
-    it("should return normalized vertex coordinates", function()
-      -- S 정점 근처 클릭 시 정규화된 좌표 반환
+    it("should return exact vertex coordinates (no normalization)", function()
+      -- S 정점 근처 클릭 시 해당 좌표 그대로 반환
+      -- Pointy-top에서 N과 S는 물리적으로 다른 위치이므로 정규화 없음
       local vertexPx, vertexPy = Input.getVertexPixel(0, 0, "S", HEX_SIZE, OFFSET_X, OFFSET_Y)
       local vertex = Input.pixelToVertex(vertexPx, vertexPy, HEX_SIZE, OFFSET_X, OFFSET_Y, VERTEX_THRESHOLD)
 
       assert.is_not_nil(vertex)
-      -- (0, 0, S)는 (0, 1, N)으로 정규화됨
+      -- (0, 0, S)는 그대로 반환됨
       assert.equals(0, vertex.q)
-      assert.equals(1, vertex.r)
-      assert.equals("N", vertex.dir)
+      assert.equals(0, vertex.r)
+      assert.equals("S", vertex.dir)
     end)
 
     it("should respect threshold boundary", function()

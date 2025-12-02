@@ -5,6 +5,8 @@ describe("Vertex", function()
   local Vertex = require("src.game.vertex")
 
   -- Story 3-4: 정점 정규화
+  -- 참고: Pointy-top 헥스에서 N과 S는 물리적으로 다른 위치
+  -- normalize()는 현재 아무 변환도 하지 않음 (정체성 함수)
   describe("normalize", function()
     it("should keep N vertex as-is", function()
       local q, r, dir = Vertex.normalize(0, 0, "N")
@@ -13,32 +15,14 @@ describe("Vertex", function()
       assert.equals("N", dir)
     end)
 
-    it("should convert S vertex to N (canonical form)", function()
-      -- (0, 0, S) → (0, 1, N) 변환
-      -- S 정점의 바로 아래 헥스의 N 정점과 동일
+    it("should keep S vertex as-is (N and S are different positions)", function()
+      -- Pointy-top 헥스에서 N과 S는 물리적으로 다른 위치
+      -- (0, 0, S)는 (0, 0) 헥스의 아래쪽 꼭지점
+      -- (0, 1, N)은 (0, 1) 헥스의 위쪽 꼭지점 - 다른 위치임
       local q, r, dir = Vertex.normalize(0, 0, "S")
       assert.equals(0, q)
-      assert.equals(1, r)
-      assert.equals("N", dir)
-    end)
-
-    it("should normalize different representations of same vertex", function()
-      -- (0, 0, N) 정점은 3개 헥스에서 참조 가능:
-      -- (0, 0, N), (0, -1, S), (-1, 0, S) 는 서로 다른 표현
-      -- 정규화 후 같은 결과가 나와야 함
-      local q1, r1, d1 = Vertex.normalize(0, 0, "N")
-      local q2, r2, d2 = Vertex.normalize(0, -1, "S")
-      local q3, r3, d3 = Vertex.normalize(-1, 0, "S")
-
-      -- 세 표현이 같은 정점인지 확인
-      local s1 = Vertex.toString(q1, r1, d1)
-      local s2 = Vertex.toString(q2, r2, d2)
-      local s3 = Vertex.toString(q3, r3, d3)
-
-      -- 참고: S 정점 중 일부만 N으로 변환 가능
-      -- 정규화 규칙: S → 북쪽 헥스의 N으로 변환
-      -- (0, -1, S) → (0, 0, N) 변환 가능
-      assert.equals(s1, s2)
+      assert.equals(0, r)
+      assert.equals("S", dir)
     end)
 
     it("should handle various positions", function()
@@ -47,6 +31,11 @@ describe("Vertex", function()
       assert.equals(2, q)
       assert.equals(-1, r)
       assert.equals("N", dir)
+
+      q, r, dir = Vertex.normalize(-1, 2, "S")
+      assert.equals(-1, q)
+      assert.equals(2, r)
+      assert.equals("S", dir)
     end)
   end)
 
@@ -143,30 +132,30 @@ describe("Vertex", function()
 
     it("should return correct edges for (0,0,N)", function()
       local edges = Vertex.getAdjacentEdges(0, 0, "N")
-      -- N 정점 인접 변: 자신의 NE, (q-1,r)의 E, (q,r-1)의 SE
-      -- 정규화 후: (0,0,NE), (-1,0,E), (0,-1,SE)
+      -- N 정점 인접 변 (픽셀 좌표로 검증됨):
+      -- (0,0,NE), (0,-1,E), (0,-1,SE)
       local found = {}
       for _, e in ipairs(edges) do
         local key = e.q .. "," .. e.r .. "," .. e.dir
         found[key] = true
       end
       assert.is_true(found["0,0,NE"], "should include (0,0,NE)")
-      assert.is_true(found["-1,0,E"], "should include (-1,0,E)")
+      assert.is_true(found["0,-1,E"], "should include (0,-1,E)")
       assert.is_true(found["0,-1,SE"], "should include (0,-1,SE)")
     end)
 
     it("should return correct edges for (0,0,S)", function()
       local edges = Vertex.getAdjacentEdges(0, 0, "S")
-      -- S 정점 인접 변: 자신의 E, 자신의 SE, (q+1,r)의 NE
-      -- 정규화 후: (0,0,E), (0,0,SE), (1,0,NE)
+      -- S 정점 인접 변 (픽셀 좌표로 검증됨):
+      -- (-1,1,NE), (-1,1,E), (0,0,SE)
       local found = {}
       for _, e in ipairs(edges) do
         local key = e.q .. "," .. e.r .. "," .. e.dir
         found[key] = true
       end
-      assert.is_true(found["0,0,E"], "should include (0,0,E)")
+      assert.is_true(found["-1,1,NE"], "should include (-1,1,NE)")
+      assert.is_true(found["-1,1,E"], "should include (-1,1,E)")
       assert.is_true(found["0,0,SE"], "should include (0,0,SE)")
-      assert.is_true(found["1,0,NE"], "should include (1,0,NE)")
     end)
 
     it("should return edges at different positions", function()
@@ -177,6 +166,122 @@ describe("Vertex", function()
       for _, e in ipairs(edges) do
         assert.is_true(e.dir == "NE" or e.dir == "E" or e.dir == "SE")
       end
+    end)
+  end)
+
+  -- getHexVertices 회귀 테스트 (픽셀 좌표 기반 검증)
+  describe("getHexVertices", function()
+    local Hex = require("src.game.hex")
+
+    -- 정점의 픽셀 좌표 계산 헬퍼
+    local function getVertexPixel(v, hexSize)
+      local x, y, z = Hex.axialToCube(v.q, v.r)
+      local px, py = Hex.cubeToPixel(x, y, z, hexSize)
+      if v.dir == "N" then
+        py = py - hexSize
+      else
+        py = py + hexSize
+      end
+      return px, py
+    end
+
+    -- 실제 헥스 꼭지점 픽셀 좌표 계산 헬퍼
+    local function getActualCorner(q, r, cornerIndex, hexSize)
+      local x, y, z = Hex.axialToCube(q, r)
+      local cx, cy = Hex.cubeToPixel(x, y, z, hexSize)
+      -- Pointy-top: N(위)부터 시계방향
+      local angles = {270, -30, 30, 90, 150, 210}  -- N, NE, SE, S, SW, NW
+      local angle = math.rad(angles[cornerIndex])
+      return cx + hexSize * math.cos(angle), cy + hexSize * math.sin(angle)
+    end
+
+    it("should return exactly 6 vertices", function()
+      local vertices = Vertex.getHexVertices(0, 0)
+      assert.equals(6, #vertices)
+    end)
+
+    it("should return vertices with valid directions", function()
+      local vertices = Vertex.getHexVertices(0, 0)
+      for _, v in ipairs(vertices) do
+        assert.is_true(v.dir == "N" or v.dir == "S",
+          "direction should be N or S but got " .. tostring(v.dir))
+      end
+    end)
+
+    it("should return vertices at correct pixel positions for (0,0)", function()
+      local hexSize = 50
+      local vertices = Vertex.getHexVertices(0, 0)
+
+      -- 각 정점이 실제 꼭지점과 일치하는지 확인
+      for i, v in ipairs(vertices) do
+        local vx, vy = getVertexPixel(v, hexSize)
+        local ax, ay = getActualCorner(0, 0, i, hexSize)
+
+        assert.is_true(math.abs(vx - ax) < 0.1,
+          string.format("Vertex %d X mismatch: expected %.1f, got %.1f", i, ax, vx))
+        assert.is_true(math.abs(vy - ay) < 0.1,
+          string.format("Vertex %d Y mismatch: expected %.1f, got %.1f", i, ay, vy))
+      end
+    end)
+
+    it("should return vertices at correct pixel positions for various hexes", function()
+      local hexSize = 50
+      local testHexes = {
+        {q = 0, r = 0},
+        {q = 1, r = 0},
+        {q = 0, r = 1},
+        {q = -1, r = 1},
+        {q = 1, r = -1},
+      }
+
+      for _, hex in ipairs(testHexes) do
+        local vertices = Vertex.getHexVertices(hex.q, hex.r)
+
+        for i, v in ipairs(vertices) do
+          local vx, vy = getVertexPixel(v, hexSize)
+          local ax, ay = getActualCorner(hex.q, hex.r, i, hexSize)
+
+          assert.is_true(math.abs(vx - ax) < 0.1,
+            string.format("Hex (%d,%d) Vertex %d X mismatch", hex.q, hex.r, i))
+          assert.is_true(math.abs(vy - ay) < 0.1,
+            string.format("Hex (%d,%d) Vertex %d Y mismatch", hex.q, hex.r, i))
+        end
+      end
+    end)
+
+    it("should return correct vertex coordinates for (0,0)", function()
+      -- 명시적인 좌표 검증 (회귀 방지)
+      local vertices = Vertex.getHexVertices(0, 0)
+
+      -- N (위): 자신의 N
+      assert.equals(0, vertices[1].q)
+      assert.equals(0, vertices[1].r)
+      assert.equals("N", vertices[1].dir)
+
+      -- NE (우상): 오른쪽 위 헥스의 S
+      assert.equals(1, vertices[2].q)
+      assert.equals(-1, vertices[2].r)
+      assert.equals("S", vertices[2].dir)
+
+      -- SE (우하): 아래 헥스의 N
+      assert.equals(0, vertices[3].q)
+      assert.equals(1, vertices[3].r)
+      assert.equals("N", vertices[3].dir)
+
+      -- S (아래): 자신의 S
+      assert.equals(0, vertices[4].q)
+      assert.equals(0, vertices[4].r)
+      assert.equals("S", vertices[4].dir)
+
+      -- SW (좌하): 왼쪽 아래 헥스의 N
+      assert.equals(-1, vertices[5].q)
+      assert.equals(1, vertices[5].r)
+      assert.equals("N", vertices[5].dir)
+
+      -- NW (좌상): 위쪽 헥스의 S
+      assert.equals(0, vertices[6].q)
+      assert.equals(-1, vertices[6].r)
+      assert.equals("S", vertices[6].dir)
     end)
   end)
 
