@@ -4,9 +4,10 @@ Love2D로 구현한 카탄 클론 코딩 프로젝트
 
 ## Demo
 
-https://github.com/user-attachments/assets/demo.mp4
+https://github.com/user-attachments/assets/8a142610-b04a-4c21-8e22-bee08e57ca98
 
 ## 소개
+
 
 클래식 카탄의 핵심 재미를 재현한 미니멀 스타일의 전략 보드게임입니다.
 TDD 기반 게임 개발 학습과 AI 워크플로우(Claude Code, BMAD Method) 활용 경험을 목표로 합니다.
